@@ -45,6 +45,8 @@ impl Lexer {
             let double_char = match (self.peek(), self.peek_at(1)) {
                 ('=', '=') => Some(TokenType::EqualEqual),
                 ('!', '=') => Some(TokenType::BangEqual),
+                ('<', '=') => Some(TokenType::LessEqual),
+                ('>', '=') => Some(TokenType::GreaterEqual),
                 _ => None,
             };
 
@@ -61,6 +63,8 @@ impl Lexer {
                 ';' => Some(TokenType::Semicolon),
                 '=' => Some(TokenType::Equal),
                 '!' => Some(TokenType::Bang),
+                '<' => Some(TokenType::Less),
+                '>' => Some(TokenType::Greater),
                 _ => None,
             };
 
