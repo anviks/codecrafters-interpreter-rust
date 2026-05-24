@@ -99,7 +99,7 @@ impl Lexer {
                 }
                 ';' => {
                     tokens.push(Token {
-                        token_type: TokenType::SemiColon,
+                        token_type: TokenType::Semicolon,
                         lexeme: self.consume().to_string(),
                         line: self.line,
                     });
