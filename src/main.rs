@@ -3,6 +3,7 @@ mod token;
 
 use std::env;
 use std::fs;
+use std::process::exit;
 
 use crate::lexer::Lexer;
 
@@ -29,6 +30,10 @@ fn main() {
 
             for tok in tokens {
                 println!("{}", tok)
+            }
+
+            if lexer.encountered_error {
+                exit(65);
             }
         }
         _ => {
