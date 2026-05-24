@@ -35,81 +35,33 @@ impl Lexer {
         let mut tokens: Vec<Token> = vec![];
 
         while !self.eof() {
-            match self.peek() {
-                '(' => {
-                    tokens.push(Token {
-                        token_type: TokenType::LeftParen,
-                        lexeme: self.consume().to_string(),
-                        line: self.line,
-                    });
-                }
-                ')' => {
-                    tokens.push(Token {
-                        token_type: TokenType::RightParen,
-                        lexeme: self.consume().to_string(),
-                        line: self.line,
-                    });
-                }
-                '{' => {
-                    tokens.push(Token {
-                        token_type: TokenType::LeftBrace,
-                        lexeme: self.consume().to_string(),
-                        line: self.line,
-                    });
-                }
-                '}' => {
-                    tokens.push(Token {
-                        token_type: TokenType::RightBrace,
-                        lexeme: self.consume().to_string(),
-                        line: self.line,
-                    });
-                }
-                '*' => {
-                    tokens.push(Token {
-                        token_type: TokenType::Star,
-                        lexeme: self.consume().to_string(),
-                        line: self.line,
-                    });
-                }
-                '.' => {
-                    tokens.push(Token {
-                        token_type: TokenType::Dot,
-                        lexeme: self.consume().to_string(),
-                        line: self.line,
-                    });
-                }
-                ',' => {
-                    tokens.push(Token {
-                        token_type: TokenType::Comma,
-                        lexeme: self.consume().to_string(),
-                        line: self.line,
-                    });
-                }
-                '+' => {
-                    tokens.push(Token {
-                        token_type: TokenType::Plus,
-                        lexeme: self.consume().to_string(),
-                        line: self.line,
-                    });
-                }
-                '-' => {
-                    tokens.push(Token {
-                        token_type: TokenType::Minus,
-                        lexeme: self.consume().to_string(),
-                        line: self.line,
-                    });
-                }
-                ';' => {
-                    tokens.push(Token {
-                        token_type: TokenType::Semicolon,
-                        lexeme: self.consume().to_string(),
-                        line: self.line,
-                    });
-                }
-                c => {
-                    eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
-                    self.encountered_error = true;
-                    self.consume();
+            let single_char = match self.peek() {
+                '(' => Some(TokenType::LeftParen),
+                ')' => Some(TokenType::RightParen),
+                '{' => Some(TokenType::LeftBrace),
+                '}' => Some(TokenType::RightBrace),
+                '*' => Some(TokenType::Star),
+                '.' => Some(TokenType::Dot),
+                ',' => Some(TokenType::Comma),
+                '+' => Some(TokenType::Plus),
+                '-' => Some(TokenType::Minus),
+                ';' => Some(TokenType::Semicolon),
+                _ => None,
+            };
+
+            if let Some(token_type) = single_char {
+                tokens.push(Token {
+                    token_type,
+                    lexeme: self.consume().to_string(),
+                    line: self.line,
+                });
+            } else {
+                match self.peek() {
+                    c => {
+                        eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
+                        self.encountered_error = true;
+                        self.consume();
+                    }
                 }
             }
         }
