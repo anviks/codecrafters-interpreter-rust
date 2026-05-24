@@ -48,6 +48,62 @@ impl Lexer {
                         line: self.line,
                     });
                 }
+                '{' => {
+                    tokens.push(Token {
+                        token_type: TokenType::LeftBrace,
+                        lexeme: self.consume().to_string(),
+                        line: self.line,
+                    });
+                }
+                '}' => {
+                    tokens.push(Token {
+                        token_type: TokenType::RightBrace,
+                        lexeme: self.consume().to_string(),
+                        line: self.line,
+                    });
+                }
+                '*' => {
+                    tokens.push(Token {
+                        token_type: TokenType::Star,
+                        lexeme: self.consume().to_string(),
+                        line: self.line,
+                    });
+                }
+                '.' => {
+                    tokens.push(Token {
+                        token_type: TokenType::Dot,
+                        lexeme: self.consume().to_string(),
+                        line: self.line,
+                    });
+                }
+                ',' => {
+                    tokens.push(Token {
+                        token_type: TokenType::Comma,
+                        lexeme: self.consume().to_string(),
+                        line: self.line,
+                    });
+                }
+                '+' => {
+                    tokens.push(Token {
+                        token_type: TokenType::Plus,
+                        lexeme: self.consume().to_string(),
+                        line: self.line,
+                    });
+                }
+                '-' => {
+                    tokens.push(Token {
+                        token_type: TokenType::Minus,
+                        lexeme: self.consume().to_string(),
+                        line: self.line,
+                    });
+                }
+                ';' => {
+                    tokens.push(Token {
+                        token_type: TokenType::SemiColon,
+                        lexeme: self.consume().to_string(),
+                        line: self.line,
+                    });
+                }
                 c => {
                     panic!("Wtf is that char? => '{}'", c)
                 }

@@ -4,6 +4,14 @@ use std::fmt;
 pub enum TokenType {
     LeftParen,
     RightParen,
+    LeftBrace,
+    RightBrace,
+    Star,
+    Dot,
+    Comma,
+    SemiColon,
+    Plus,
+    Minus,
     Eof,
 }
 
