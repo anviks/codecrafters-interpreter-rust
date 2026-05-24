@@ -70,8 +70,7 @@ impl Lexer {
                     lexeme: self.consume().to_string() + &self.consume().to_string(),
                     line: self.line,
                 });
-            }
-            if let Some(token_type) = single_char {
+            } else if let Some(token_type) = single_char {
                 tokens.push(Token {
                     token_type,
                     lexeme: self.consume().to_string(),
