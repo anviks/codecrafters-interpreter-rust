@@ -4,6 +4,7 @@ pub struct Lexer {
     pub source: Vec<char>,
     pub current: usize,
     pub line: u32,
+    pub encountered_error: bool,
 }
 
 impl Lexer {
@@ -12,6 +13,7 @@ impl Lexer {
             source: source.chars().collect(),
             current: 0,
             line: 1,
+            encountered_error: false,
         }
     }
 
@@ -105,7 +107,9 @@ impl Lexer {
                     });
                 }
                 c => {
-                    panic!("[line {}] Error: Unexpected character: {}", self.line, c)
+                    eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
+                    self.encountered_error = true;
+                    self.consume();
                 }
             }
         }
