@@ -22,6 +22,9 @@ impl Lexer {
     }
 
     fn peek_at(&self, offset: usize) -> char {
+        if self.current + offset >= self.source.len() {
+            return '\0';
+        }
         self.source[self.current + offset]
     }
 
@@ -56,6 +59,8 @@ impl Lexer {
                 '+' => Some(TokenType::Plus),
                 '-' => Some(TokenType::Minus),
                 ';' => Some(TokenType::Semicolon),
+                '=' => Some(TokenType::Equal),
+                '!' => Some(TokenType::Bang),
                 _ => None,
             };
 
