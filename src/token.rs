@@ -6,12 +6,19 @@ pub enum TokenType {
     RightParen,
     LeftBrace,
     RightBrace,
+
     Star,
     Dot,
     Comma,
     Semicolon,
     Plus,
     Minus,
+
+    Equal,
+    EqualEqual,
+    Bang,
+    BangEqual,
+
     Eof,
 }
 

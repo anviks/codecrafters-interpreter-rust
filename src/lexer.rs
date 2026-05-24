@@ -21,8 +21,12 @@ impl Lexer {
         self.current >= self.source.len()
     }
 
+    fn peek_at(&self, offset: usize) -> char {
+        self.source[self.current + offset]
+    }
+
     fn peek(&self) -> char {
-        self.source[self.current]
+        self.peek_at(0)
     }
 
     fn consume(&mut self) -> char {
@@ -35,6 +39,12 @@ impl Lexer {
         let mut tokens: Vec<Token> = vec![];
 
         while !self.eof() {
+            let double_char = match (self.peek(), self.peek_at(1)) {
+                ('=', '=') => Some(TokenType::EqualEqual),
+                ('!', '=') => Some(TokenType::BangEqual),
+                _ => None,
+            };
+
             let single_char = match self.peek() {
                 '(' => Some(TokenType::LeftParen),
                 ')' => Some(TokenType::RightParen),
@@ -49,6 +59,13 @@ impl Lexer {
                 _ => None,
             };
 
+            if let Some(token_type) = double_char {
+                tokens.push(Token {
+                    token_type,
+                    lexeme: self.consume().to_string() + &self.consume().to_string(),
+                    line: self.line,
+                });
+            }
             if let Some(token_type) = single_char {
                 tokens.push(Token {
                     token_type,
