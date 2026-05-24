@@ -1,6 +1,11 @@
-#![allow(unused_variables)]
+mod lexer;
+mod token;
+
 use std::env;
 use std::fs;
+
+use crate::lexer::Lexer;
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -14,19 +19,16 @@ fn main() {
 
     match command.as_str() {
         "tokenize" => {
-            // You can use print statements as follows for debugging, they'll be visible when running tests.
-            eprintln!("Logs from your program will appear here!");
-
             let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
                 eprintln!("Failed to read file {}", filename);
                 String::new()
             });
 
-            // TODO: Uncomment the code below to pass the first stage
-            if !file_contents.is_empty() {
-                panic!("Scanner not implemented");
-            } else {
-                println!("EOF  null"); // Placeholder, replace this line when implementing the scanner
+            let mut lexer = Lexer::new(file_contents);
+            let tokens = lexer.analyze();
+
+            for tok in tokens {
+                println!("{}", tok)
             }
         }
         _ => {
