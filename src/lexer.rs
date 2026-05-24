@@ -105,7 +105,7 @@ impl Lexer {
                     });
                 }
                 c => {
-                    panic!("[line {}] Error: Unexpected character: {}", c)
+                    panic!("[line {}] Error: Unexpected character: {}", self.line, c)
                 }
             }
         }
