@@ -104,6 +104,10 @@ impl Lexer {
                 '<' => Some(TokenType::Less),
                 '>' => Some(TokenType::Greater),
                 '/' => Some(TokenType::Slash),
+                ' ' | '\t' => {
+                    self.consume();
+                    continue;
+                }
                 '\n' => {
                     if state == LexState::Comment {
                         state = LexState::Normal;
