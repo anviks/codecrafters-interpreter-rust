@@ -39,6 +39,15 @@ impl Lexer {
     }
 
     pub fn analyze(&mut self) -> Vec<Token> {
+        #[derive(PartialEq)]
+        enum LexState {
+            Normal,
+            Comment,
+            BlockComment,
+        }
+
+        let mut state = LexState::Normal;
+        let mut block_comment_depth = 0;
         let mut tokens: Vec<Token> = vec![];
 
         while !self.eof() {
@@ -47,6 +56,35 @@ impl Lexer {
                 ('!', '=') => Some(TokenType::BangEqual),
                 ('<', '=') => Some(TokenType::LessEqual),
                 ('>', '=') => Some(TokenType::GreaterEqual),
+                ('/', '/') => {
+                    if state == LexState::Normal {
+                        state = LexState::Comment;
+                    }
+                    self.consume();
+                    self.consume();
+                    continue;
+                }
+                ('/', '*') => {
+                    if state != LexState::Comment {
+                        state = LexState::BlockComment;
+                        block_comment_depth += 1;
+                    }
+                    self.consume();
+                    self.consume();
+                    continue;
+                }
+                ('*', '/') => {
+                    if state == LexState::BlockComment {
+                        block_comment_depth -= 1;
+                        if block_comment_depth == 0 {
+                            state = LexState::Normal;
+                        }
+                        self.consume();
+                        self.consume();
+                        continue;
+                    }
+                    None
+                }
                 _ => None,
             };
 
@@ -65,8 +103,22 @@ impl Lexer {
                 '!' => Some(TokenType::Bang),
                 '<' => Some(TokenType::Less),
                 '>' => Some(TokenType::Greater),
+                '/' => Some(TokenType::Slash),
+                '\n' => {
+                    if state == LexState::Comment {
+                        state = LexState::Normal;
+                    }
+                    self.line += 1;
+                    self.consume();
+                    continue;
+                }
                 _ => None,
             };
+
+            if state != LexState::Normal {
+                self.consume();
+                continue;
+            }
 
             if let Some(token_type) = double_char {
                 tokens.push(Token {
@@ -81,13 +133,9 @@ impl Lexer {
                     line: self.line,
                 });
             } else {
-                match self.peek() {
-                    c => {
-                        eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
-                        self.encountered_error = true;
-                        self.consume();
-                    }
-                }
+                let c = self.consume();
+                eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
+                self.encountered_error = true;
             }
         }
 
