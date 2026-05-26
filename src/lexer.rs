@@ -65,6 +65,56 @@ impl Lexer {
         c
     }
 
+    fn string(&mut self) -> Option<Token> {
+        let mut s = String::new();
+        self.consume();
+        while !self.eof() && self.peek() != '"' {
+            if self.peek() == '\n' {
+                self.line += 1
+            }
+            s.push(self.consume());
+        }
+        if self.eof() {
+            eprintln!("[line {}] Error: Unterminated string.", self.line);
+            self.encountered_error = true;
+            None
+        } else {
+            self.consume();
+            Some(Token {
+                token_type: TokenType::String,
+                lexeme: format!("\"{}\"", s),
+                literal: s,
+                line: self.line,
+            })
+        }
+    }
+
+    fn number(&mut self) -> Option<Token> {
+        let mut num_str = String::new();
+        while !self.eof() && (self.peek().is_ascii_digit() || self.peek() == '.') {
+            num_str.push(self.consume());
+        }
+
+        let parsed_num = num_str.parse::<f64>();
+
+        match parsed_num {
+            Ok(num) => Some(Token {
+                token_type: TokenType::Number,
+                lexeme: format!("{}", num_str),
+                literal: format_float(num),
+                line: self.line,
+            }),
+            Err(_) => {
+                eprintln!(
+                    "[line {}] Error: Invalid number literal: {}",
+                    self.line, num_str
+                );
+                self.encountered_error = true;
+                None
+            }
+        }
+    }
+
     pub fn analyze(&mut self) -> Vec<Token> {
         let mut tokens: Vec<Token> = vec![];
 
@@ -148,54 +198,14 @@ impl Lexer {
                 });
             } else {
                 match self.peek() {
-                    '"' => {
-                        let mut s = String::new();
-                        self.consume();
-                        while !self.eof() && self.peek() != '"' {
-                            if self.peek() == '\n' {
-                                self.line += 1
-                            }
-                            s.push(self.consume());
-                        }
-                        if self.eof() {
-                            eprintln!("[line {}] Error: Unterminated string.", self.line);
-                            self.encountered_error = true;
-                        } else {
-                            self.consume();
-                            tokens.push(Token {
-                                token_type: TokenType::String,
-                                lexeme: format!("\"{}\"", s),
-                                literal: s,
-                                line: self.line,
-                            });
-                        }
-                    }
-                    '0'..='9' => {
-                        let mut num_str = String::new();
-                        while !self.eof() && (self.peek().is_ascii_digit() || self.peek() == '.') {
-                            num_str.push(self.consume());
-                        }
-
-                        let parsed_num = num_str.parse::<f64>();
-
-                        match parsed_num {
-                            Ok(num) => {
-                                tokens.push(Token {
-                                    token_type: TokenType::Number,
-                                    lexeme: format!("{}", num_str),
-                                    literal: format_float(num),
-                                    line: self.line,
-                                });
-                            }
-                            Err(_) => {
-                                eprintln!(
-                                    "[line {}] Error: Invalid number literal: {}",
-                                    self.line, num_str
-                                );
-                                self.encountered_error = true;
-                            }
-                        }
-                    }
+                    '"' => match self.string() {
+                        Some(token) => tokens.push(token),
+                        None => {}
+                    },
+                    '0'..='9' => match self.number() {
+                        Some(token) => tokens.push(token),
+                        None => {}
+                    },
                     'a'..='z' | 'A'..='Z' | '_' => {
                         let mut identifier = self.consume().to_string();
                         while !self.eof() {
