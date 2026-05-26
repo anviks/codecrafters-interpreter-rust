@@ -110,17 +110,40 @@ impl Lexer {
                     token_type,
                     lexeme: self.consume().to_string() + &self.consume().to_string(),
                     line: self.line,
+                    literal: "null".to_string(),
                 });
             } else if let Some(token_type) = single_char {
                 tokens.push(Token {
                     token_type,
                     lexeme: self.consume().to_string(),
                     line: self.line,
+                    literal: "null".to_string(),
                 });
             } else {
-                let c = self.consume();
-                eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
-                self.encountered_error = true;
+                match self.consume() {
+                    '"' => {
+                        let mut str = "".to_string();
+                        while !self.eof() && self.peek() != '"' {
+                            str += &self.consume().to_string();
+                        }
+                        if self.eof() {
+                            eprintln!("[line {}] Error: Unterminated string.", self.line);
+                            self.encountered_error = true;
+                        } else {
+                            self.consume();
+                            tokens.push(Token {
+                                token_type: TokenType::String,
+                                lexeme: format!("\"{}\"", str),
+                                literal: str,
+                                line: self.line,
+                            });
+                        }
+                    }
+                    c => {
+                        eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
+                        self.encountered_error = true;
+                    }
+                }
             }
         }
 
@@ -128,6 +151,7 @@ impl Lexer {
             token_type: TokenType::Eof,
             lexeme: String::new(),
             line: self.line,
+            literal: "null".to_string(),
         });
 
         tokens
