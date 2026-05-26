@@ -152,6 +152,9 @@ impl Lexer {
                         let mut s = String::new();
                         self.consume();
                         while !self.eof() && self.peek() != '"' {
+                            if self.peek() == '\n' {
+                                self.line += 1
+                            }
                             s.push(self.consume());
                         }
                         if self.eof() {
