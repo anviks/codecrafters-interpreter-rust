@@ -162,8 +162,9 @@ impl Lexer {
                                     line: self.line,
                                 });
                             }
-                            Err(e) => {
-                                println!("{}", e);
+                            Err(_) => {
+                                eprintln!("[line {}] Error: Invalid number literal: {}", self.line, num_str);
+                                self.encountered_error = true;
                             }
                         }
                     }
