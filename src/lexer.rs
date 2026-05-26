@@ -1,5 +1,10 @@
 use crate::token::{Token, TokenType};
 
+fn format_float(f: f64) -> String {
+    let s = format!("{}", f);
+    if s.contains('.') { s } else { s + ".0" }
+}
+
 pub struct Lexer {
     pub source: Vec<char>,
     pub current: usize,
@@ -120,9 +125,10 @@ impl Lexer {
                     literal: "null".to_string(),
                 });
             } else {
-                match self.consume() {
+                match self.peek() {
                     '"' => {
                         let mut str = "".to_string();
+                        self.consume();
                         while !self.eof() && self.peek() != '"' {
                             str += &self.consume().to_string();
                         }
@@ -139,7 +145,30 @@ impl Lexer {
                             });
                         }
                     }
-                    c => {
+                    '0'..='9' => {
+                        let mut num_str = "".to_string();
+                        while !self.eof() && (self.peek().is_ascii_digit() || self.peek() == '.') {
+                            num_str += &self.consume().to_string();
+                        }
+
+                        let parsed_num = num_str.parse::<f64>();
+
+                        match parsed_num {
+                            Ok(num) => {
+                                tokens.push(Token {
+                                    token_type: TokenType::Number,
+                                    lexeme: format!("{}", num_str),
+                                    literal: format_float(num),
+                                    line: self.line,
+                                });
+                            }
+                            Err(e) => {
+                                println!("{}", e);
+                            }
+                        }
+                    }
+                    _ => {
+                        let c = self.consume();
                         eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
                         self.encountered_error = true;
                     }

@@ -26,6 +26,7 @@ pub enum TokenType {
     GreaterEqual,
 
     String,
+    Number,
 
     Eof,
 }
