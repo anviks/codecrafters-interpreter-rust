@@ -116,6 +116,8 @@ impl Lexer {
     }
 
     pub fn analyze(&mut self) -> Vec<Token> {
+        self.encountered_error = false;
+
         let mut tokens: Vec<Token> = vec![];
 
         while !self.eof() {
@@ -238,6 +240,9 @@ impl Lexer {
             line: self.line,
             literal: "null".to_string(),
         });
+
+        self.current = 0;
+        self.line = 1;
 
         tokens
     }
