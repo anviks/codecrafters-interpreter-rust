@@ -115,6 +115,24 @@ impl Lexer {
         }
     }
 
+    fn identifier(&mut self) -> Token {
+        let mut identifier = self.consume().to_string();
+        while !self.eof() {
+            let c = self.peek();
+            if !c.is_ascii_alphanumeric() && c != '_' {
+                break;
+            }
+            identifier.push(self.consume());
+        }
+
+        Token {
+            token_type: get_token_type_for_identifier(identifier.as_str()),
+            lexeme: identifier,
+            literal: "null".to_string(),
+            line: self.line,
+        }
+    }
+
     pub fn analyze(&mut self) -> Vec<Token> {
         self.encountered_error = false;
 
@@ -208,23 +226,7 @@ impl Lexer {
                         Some(token) => tokens.push(token),
                         None => {}
                     },
-                    'a'..='z' | 'A'..='Z' | '_' => {
-                        let mut identifier = self.consume().to_string();
-                        while !self.eof() {
-                            let c = self.peek();
-                            if !c.is_ascii_alphanumeric() && c != '_' {
-                                break;
-                            }
-                            identifier.push(self.consume());
-                        }
-
-                        tokens.push(Token {
-                            token_type: get_token_type_for_identifier(identifier.as_str()),
-                            lexeme: identifier,
-                            literal: "null".to_string(),
-                            line: self.line,
-                        });
-                    }
+                    'a'..='z' | 'A'..='Z' | '_' => tokens.push(self.identifier()),
                     _ => {
                         let c = self.consume();
                         eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
