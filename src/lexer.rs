@@ -167,6 +167,51 @@ impl Lexer {
                             }
                         }
                     }
+                    'a'..='z' | 'A'..='Z' | '_' => {
+                        let mut identifier = self.consume().to_string();
+                        while !self.eof() {
+                            let c = self.peek();
+                            if !c.is_ascii_alphanumeric() && c != '_' {
+                                break;
+                            }
+                            identifier += &self.consume().to_string();
+                        }
+
+                        let token_type = match identifier.as_str() {
+                            "and" => TokenType::And,
+                            "class" => TokenType::Class,
+                            "else" => TokenType::Else,
+                            "false" => TokenType::False,
+                            "for" => TokenType::For,
+                            "fun" => TokenType::Fun,
+                            "if" => TokenType::If,
+                            "nil" => TokenType::Nil,
+                            "or" => TokenType::Or,
+                            "print" => TokenType::Print,
+                            "return" => TokenType::Return,
+                            "super" => TokenType::Super,
+                            "this" => TokenType::This,
+                            "true" => TokenType::True,
+                            "var" => TokenType::Var,
+                            "while" => TokenType::While,
+                            _ => {
+                                tokens.push(Token {
+                                    token_type: TokenType::Identifier,
+                                    lexeme: identifier,
+                                    literal: "null".to_string(),
+                                    line: self.line,
+                                });
+                                continue;
+                            }
+                        };
+
+                        tokens.push(Token {
+                            token_type,
+                            lexeme: identifier,
+                            literal: "null".to_string(),
+                            line: self.line,
+                        });
+                    }
                     _ => {
                         let c = self.consume();
                         eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);

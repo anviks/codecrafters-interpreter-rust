@@ -28,6 +28,25 @@ pub enum TokenType {
     String,
     Number,
 
+    Identifier,
+
+    And,
+    Class,
+    Else,
+    False,
+    For,
+    Fun,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,
+
     Eof,
 }
 
