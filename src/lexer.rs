@@ -149,10 +149,10 @@ impl Lexer {
             } else {
                 match self.peek() {
                     '"' => {
-                        let mut str = "".to_string();
+                        let mut s = String::new();
                         self.consume();
                         while !self.eof() && self.peek() != '"' {
-                            str += &self.consume().to_string();
+                            s.push(self.consume());
                         }
                         if self.eof() {
                             eprintln!("[line {}] Error: Unterminated string.", self.line);
@@ -161,16 +161,16 @@ impl Lexer {
                             self.consume();
                             tokens.push(Token {
                                 token_type: TokenType::String,
-                                lexeme: format!("\"{}\"", str),
-                                literal: str,
+                                lexeme: format!("\"{}\"", s),
+                                literal: s,
                                 line: self.line,
                             });
                         }
                     }
                     '0'..='9' => {
-                        let mut num_str = "".to_string();
+                        let mut num_str = String::new();
                         while !self.eof() && (self.peek().is_ascii_digit() || self.peek() == '.') {
-                            num_str += &self.consume().to_string();
+                            num_str.push(self.consume());
                         }
 
                         let parsed_num = num_str.parse::<f64>();
@@ -185,7 +185,10 @@ impl Lexer {
                                 });
                             }
                             Err(_) => {
-                                eprintln!("[line {}] Error: Invalid number literal: {}", self.line, num_str);
+                                eprintln!(
+                                    "[line {}] Error: Invalid number literal: {}",
+                                    self.line, num_str
+                                );
                                 self.encountered_error = true;
                             }
                         }
@@ -197,7 +200,7 @@ impl Lexer {
                             if !c.is_ascii_alphanumeric() && c != '_' {
                                 break;
                             }
-                            identifier += &self.consume().to_string();
+                            identifier.push(self.consume());
                         }
 
                         tokens.push(Token {
