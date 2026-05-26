@@ -218,14 +218,8 @@ impl Lexer {
                 });
             } else {
                 match self.peek() {
-                    '"' => match self.string() {
-                        Some(token) => tokens.push(token),
-                        None => {}
-                    },
-                    '0'..='9' => match self.number() {
-                        Some(token) => tokens.push(token),
-                        None => {}
-                    },
+                    '"' => tokens.extend(self.string()),
+                    '0'..='9' => tokens.extend(self.number()),
                     'a'..='z' | 'A'..='Z' | '_' => tokens.push(self.identifier()),
                     _ => {
                         let c = self.consume();
