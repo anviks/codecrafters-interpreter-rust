@@ -70,12 +70,18 @@ impl fmt::Display for TokenType {
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub literal: String,
+    pub literal: Option<String>,
     pub line: u32,
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} {}", self.token_type, self.lexeme, self.literal)
+        write!(
+            f,
+            "{} {} {}",
+            self.token_type,
+            self.lexeme,
+            self.literal.as_deref().unwrap_or("null")
+        )
     }
 }

@@ -80,12 +80,7 @@ impl Lexer {
             None
         } else {
             self.consume();
-            Some(Token {
-                token_type: TokenType::String,
-                lexeme: format!("\"{}\"", s),
-                literal: s,
-                line: self.line,
-            })
+            Some(self.make_token_with_literal(TokenType::String, format!("\"{}\"", s), s))
         }
     }
 
@@ -98,12 +93,9 @@ impl Lexer {
         let parsed_num = num_str.parse::<f64>();
 
         match parsed_num {
-            Ok(num) => Some(Token {
-                token_type: TokenType::Number,
-                lexeme: num_str,
-                literal: format_float(num),
-                line: self.line,
-            }),
+            Ok(num) => {
+                Some(self.make_token_with_literal(TokenType::Number, num_str, format_float(num)))
+            }
             Err(_) => {
                 eprintln!(
                     "[line {}] Error: Invalid number literal: {}",
@@ -125,12 +117,10 @@ impl Lexer {
             identifier.push(self.consume());
         }
 
-        Token {
-            token_type: get_token_type_for_identifier(identifier.as_str()),
-            lexeme: identifier,
-            literal: "null".to_string(),
-            line: self.line,
-        }
+        self.make_token(
+            get_token_type_for_identifier(identifier.as_str()),
+            identifier,
+        )
     }
 
     fn block_comment(&mut self) {
@@ -151,6 +141,29 @@ impl Lexer {
             if depth == 0 {
                 break;
             }
+        }
+    }
+
+    fn make_token(&self, token_type: TokenType, lexeme: String) -> Token {
+        Token {
+            token_type,
+            lexeme,
+            literal: None,
+            line: self.line,
+        }
+    }
+
+    fn make_token_with_literal(
+        &self,
+        token_type: TokenType,
+        lexeme: String,
+        literal: String,
+    ) -> Token {
+        Token {
+            token_type,
+            lexeme,
+            literal: Some(literal),
+            line: self.line,
         }
     }
 
@@ -188,19 +201,11 @@ impl Lexer {
             };
 
             if let Some(token_type) = double_char {
-                tokens.push(Token {
-                    token_type,
-                    lexeme: self.consume().to_string() + &self.consume().to_string(),
-                    line: self.line,
-                    literal: "null".to_string(),
-                });
+                let lexeme = self.consume().to_string() + &self.consume().to_string();
+                tokens.push(self.make_token(token_type, lexeme));
             } else if let Some(token_type) = single_char {
-                tokens.push(Token {
-                    token_type,
-                    lexeme: self.consume().to_string(),
-                    line: self.line,
-                    literal: "null".to_string(),
-                });
+                let lexeme = self.consume().to_string();
+                tokens.push(self.make_token(token_type, lexeme));
             } else {
                 match self.peek() {
                     '"' => tokens.extend(self.string()),
@@ -228,12 +233,7 @@ impl Lexer {
             }
         }
 
-        tokens.push(Token {
-            token_type: TokenType::Eof,
-            lexeme: String::new(),
-            line: self.line,
-            literal: "null".to_string(),
-        });
+        tokens.push(self.make_token(TokenType::Eof, String::new()));
 
         self.current = 0;
         self.line = 1;
