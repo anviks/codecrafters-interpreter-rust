@@ -133,6 +133,27 @@ impl Lexer {
         }
     }
 
+    fn block_comment(&mut self) {
+        let mut depth = 0;
+        while !self.eof() {
+            if self.peek() == '/' && self.peek_at(1) == '*' {
+                self.consume();
+                depth += 1;
+            } else if self.peek() == '*' && self.peek_at(1) == '/' {
+                self.consume();
+                depth -= 1;
+            } else if self.peek() == '\n' {
+                self.line += 1;
+            }
+
+            self.consume();
+
+            if depth == 0 {
+                break;
+            }
+        }
+    }
+
     pub fn analyze(&mut self) -> Vec<Token> {
         self.encountered_error = false;
 
@@ -197,26 +218,7 @@ impl Lexer {
                             self.consume();
                         }
                     }
-                    '/' if self.peek_at(1) == '*' => {
-                        let mut depth = 0;
-                        while !self.eof() {
-                            if self.peek() == '/' && self.peek_at(1) == '*' {
-                                self.consume();
-                                depth += 1;
-                            } else if self.peek() == '*' && self.peek_at(1) == '/' {
-                                self.consume();
-                                depth -= 1;
-                            } else if self.peek() == '\n' {
-                                self.line += 1;
-                            }
-
-                            self.consume();
-
-                            if depth == 0 {
-                                break;
-                            }
-                        }
-                    }
+                    '/' if self.peek_at(1) == '*' => self.block_comment(),
                     _ => {
                         let c = self.consume();
                         eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
