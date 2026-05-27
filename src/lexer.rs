@@ -100,7 +100,7 @@ impl Lexer {
         match parsed_num {
             Ok(num) => Some(Token {
                 token_type: TokenType::Number,
-                lexeme: format!("{}", num_str),
+                lexeme: num_str,
                 literal: format_float(num),
                 line: self.line,
             }),
@@ -144,33 +144,6 @@ impl Lexer {
                 ('!', '=') => Some(TokenType::BangEqual),
                 ('<', '=') => Some(TokenType::LessEqual),
                 ('>', '=') => Some(TokenType::GreaterEqual),
-                ('/', '/') => {
-                    while !self.eof() && self.peek() != '\n' {
-                        self.consume();
-                    }
-                    continue;
-                }
-                ('/', '*') => {
-                    let mut depth = 0;
-                    while !self.eof() {
-                        if self.peek() == '/' && self.peek_at(1) == '*' {
-                            self.consume();
-                            depth += 1;
-                        } else if self.peek() == '*' && self.peek_at(1) == '/' {
-                            self.consume();
-                            depth -= 1;
-                        } else if self.peek() == '\n' {
-                            self.line += 1;
-                        }
-
-                        self.consume();
-
-                        if depth == 0 {
-                            break;
-                        }
-                    }
-                    continue;
-                }
                 _ => None,
             };
 
@@ -190,15 +163,6 @@ impl Lexer {
                 '<' => Some(TokenType::Less),
                 '>' => Some(TokenType::Greater),
                 '/' => Some(TokenType::Slash),
-                ' ' | '\t' => {
-                    self.consume();
-                    continue;
-                }
-                '\n' => {
-                    self.line += 1;
-                    self.consume();
-                    continue;
-                }
                 _ => None,
             };
 
@@ -221,6 +185,38 @@ impl Lexer {
                     '"' => tokens.extend(self.string()),
                     '0'..='9' => tokens.extend(self.number()),
                     'a'..='z' | 'A'..='Z' | '_' => tokens.push(self.identifier()),
+                    ' ' | '\t' => {
+                        self.consume();
+                    }
+                    '\n' => {
+                        self.line += 1;
+                        self.consume();
+                    }
+                    '/' if self.peek_at(1) == '/' => {
+                        while !self.eof() && self.peek() != '\n' {
+                            self.consume();
+                        }
+                    }
+                    '/' if self.peek_at(1) == '*' => {
+                        let mut depth = 0;
+                        while !self.eof() {
+                            if self.peek() == '/' && self.peek_at(1) == '*' {
+                                self.consume();
+                                depth += 1;
+                            } else if self.peek() == '*' && self.peek_at(1) == '/' {
+                                self.consume();
+                                depth -= 1;
+                            } else if self.peek() == '\n' {
+                                self.line += 1;
+                            }
+
+                            self.consume();
+
+                            if depth == 0 {
+                                break;
+                            }
+                        }
+                    }
                     _ => {
                         let c = self.consume();
                         eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
