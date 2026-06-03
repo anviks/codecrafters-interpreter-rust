@@ -51,7 +51,10 @@ fn main() {
 
             let mut parser = Parser::new(tokens);
             let expr = parser.parse();
-            println!("{}", expr.to_string());
+            println!("{}", match expr {
+                Some(ex) => ex.to_string(),
+                None => "null".to_string(),
+            });
         }
         _ => {
             eprintln!("Unknown command: {}", command);

@@ -5,6 +5,11 @@ use crate::{
     token::{Token, TokenType},
 };
 
+struct ParseError {
+    token: Token,
+    message: String,
+}
+
 pub(crate) struct Parser {
     pub(crate) tokens: Vec<Token>,
     pub(crate) current: usize,
@@ -64,54 +69,59 @@ impl Parser {
         false
     }
 
-    fn primary(&mut self) -> Expr {
+    fn primary(&mut self) -> Result<Expr, ParseError> {
         match &self.consume().token_type {
-            TokenType::False => Expr::Literal(LiteralValue::Bool(false)),
-            TokenType::True => Expr::Literal(LiteralValue::Bool(true)),
-            TokenType::Nil => Expr::Literal(LiteralValue::Nil),
-            TokenType::Number => Expr::Literal(LiteralValue::Number(
-                self.previous()
-                    .literal
-                    .clone()
-                    .unwrap()
-                    .parse::<f64>()
-                    .unwrap(),
-            )),
-            TokenType::String => {
-                Expr::Literal(LiteralValue::Str(self.previous().literal.clone().unwrap()))
+            TokenType::False => Ok(Expr::Literal(LiteralValue::Bool(false))),
+            TokenType::True => Ok(Expr::Literal(LiteralValue::Bool(true))),
+            TokenType::Nil => Ok(Expr::Literal(LiteralValue::Nil)),
+            TokenType::Number => {
+                let value = self.previous().literal.clone().unwrap();
+                Ok(Expr::Literal(LiteralValue::Number(
+                    value.parse::<f64>().map_err(|_| ParseError {
+                        token: self.previous().clone(),
+                        message: "Failed to parse number".to_string(),
+                    })?,
+                )))
             }
+            TokenType::String => Ok(Expr::Literal(LiteralValue::Str(
+                self.previous().literal.clone().unwrap(),
+            ))),
             TokenType::LeftParen => {
-                let expr = self.expression();
-                assert_eq!(
-                    self.consume().token_type,
-                    TokenType::RightParen,
-                    "Expected ')' after expression."
-                );
-                Expr::Grouping(Box::new(expr))
+                let expr = self.expression()?;
+                if self.consume().token_type != TokenType::RightParen {
+                    return Err(ParseError {
+                        token: self.previous().clone(),
+                        message: String::from("Expected ')' after expression."),
+                    });
+                }
+                Ok(Expr::Grouping(Box::new(expr)))
             }
-            t => panic!("Unknown token type: {}", t),
+            _ => Err(ParseError {
+                token: self.previous().clone(),
+                message: String::from("Unexpected token."),
+            }),
         }
     }
 
-    fn unary(&mut self) -> Expr {
+    fn unary(&mut self) -> Result<Expr, ParseError> {
         if self.matches(&[TokenType::Bang, TokenType::Minus]) {
             let operator = self.consume().clone();
-            let right = self.unary();
-            return Expr::Unary {
+            let right = self.unary()?;
+            return Ok(Expr::Unary {
                 operator,
                 right: Box::new(right),
-            };
+            });
         }
 
         self.primary()
     }
 
-    fn factor(&mut self) -> Expr {
-        let mut expr = self.unary();
+    fn factor(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.unary()?;
 
         while self.matches(&[TokenType::Slash, TokenType::Star]) {
             let operator = self.consume().clone();
-            let right = self.unary();
+            let right = self.unary()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator,
@@ -119,15 +129,15 @@ impl Parser {
             };
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn term(&mut self) -> Expr {
-        let mut expr = self.factor();
+    fn term(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.factor()?;
 
         while self.matches(&[TokenType::Minus, TokenType::Plus]) {
             let operator = self.consume().clone();
-            let right = self.factor();
+            let right = self.factor()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator,
@@ -135,11 +145,11 @@ impl Parser {
             };
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn comparison(&mut self) -> Expr {
-        let mut expr = self.term();
+    fn comparison(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.term()?;
 
         while self.matches(&[
             TokenType::Greater,
@@ -148,7 +158,7 @@ impl Parser {
             TokenType::LessEqual,
         ]) {
             let operator = self.consume().clone();
-            let right = self.term();
+            let right = self.term()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator,
@@ -156,15 +166,15 @@ impl Parser {
             };
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn equality(&mut self) -> Expr {
-        let mut expr = self.comparison();
+    fn equality(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.comparison()?;
 
         while self.matches(&[TokenType::BangEqual, TokenType::EqualEqual]) {
             let operator = self.consume().clone();
-            let right = self.comparison();
+            let right = self.comparison()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator,
@@ -172,14 +182,17 @@ impl Parser {
             };
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn expression(&mut self) -> Expr {
+    fn expression(&mut self) -> Result<Expr, ParseError> {
         self.equality()
     }
 
-    pub(crate) fn parse(&mut self) -> Expr {
-        self.expression()
+    pub(crate) fn parse(&mut self) -> Option<Expr> {
+        match self.expression() {
+            Ok(expr) => Some(expr),
+            Err(_) => None,
+        }
     }
 }
