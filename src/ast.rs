@@ -1,0 +1,57 @@
+use std::fmt::format;
+
+use crate::{helpers::format_float, token::Token};
+
+pub(crate) enum LiteralValue {
+    Number(f64),
+    Str(String),
+    Bool(bool),
+    Nil,
+}
+
+pub(crate) enum Expr {
+    Unary {
+        operator: Token,
+        right: Box<Expr>,
+    },
+    Binary {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
+    },
+    Grouping(Box<Expr>),
+    Literal(LiteralValue),
+}
+
+impl LiteralValue {
+    pub(crate) fn to_string(&self) -> String {
+        match self {
+            LiteralValue::Number(num) => format_float(*num),
+            LiteralValue::Str(s) => s.to_string(),
+            LiteralValue::Bool(b) => b.to_string(),
+            LiteralValue::Nil => String::from("nil"),
+        }
+    }
+}
+
+impl Expr {
+    pub(crate) fn to_string(&self) -> String {
+        match self {
+            Expr::Unary { operator, right } => {
+                format!("({} {})", operator.lexeme, right.to_string())
+            }
+            Expr::Binary {
+                left,
+                operator,
+                right,
+            } => format!(
+                "({} {} {})",
+                operator.lexeme,
+                left.to_string(),
+                right.to_string()
+            ),
+            Expr::Grouping(expr) => format!("(group {})", expr.to_string()),
+            Expr::Literal(literal_value) => literal_value.to_string(),
+        }
+    }
+}
