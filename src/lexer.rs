@@ -1,9 +1,7 @@
-use crate::token::{Token, TokenType};
-
-fn format_float(f: f64) -> String {
-    let s = format!("{}", f);
-    if s.contains('.') { s } else { s + ".0" }
-}
+use crate::{
+    helpers::format_float,
+    token::{Token, TokenType},
+};
 
 fn get_token_type_for_identifier(identifier: &str) -> TokenType {
     match identifier {
