@@ -53,7 +53,7 @@ fn main() {
             let expr = parser.parse();
             println!("{}", match expr {
                 Some(ex) => ex.to_string(),
-                None => "null".to_string(),
+                None => String::new(),
             });
 
             if parser.encountered_error {
