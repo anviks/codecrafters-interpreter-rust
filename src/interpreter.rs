@@ -70,7 +70,7 @@ pub(crate) fn evaluate(expr: Expr) -> Result<LoxValue, RuntimeError> {
 
             match operator.token_type {
                 TokenType::Minus => Ok(LoxValue::Number(-r.as_number()?)),
-                TokenType::Bang => Ok(LoxValue::Bool(r.is_truthy())),
+                TokenType::Bang => Ok(LoxValue::Bool(!r.is_truthy())),
                 _ => Ok(LoxValue::Nil),
             }
         }
