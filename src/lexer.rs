@@ -194,7 +194,6 @@ impl Lexer {
                 '!' => Some(TokenType::Bang),
                 '<' => Some(TokenType::Less),
                 '>' => Some(TokenType::Greater),
-                '/' => Some(TokenType::Slash),
                 _ => None,
             };
 
@@ -222,6 +221,7 @@ impl Lexer {
                         }
                     }
                     '/' if self.peek_at(1) == '*' => self.block_comment(),
+                    '/' => tokens.push(self.make_token(TokenType::Slash, String::from("/"))),
                     _ => {
                         let c = self.consume();
                         eprintln!("[line {}] Error: Unexpected character: {}", self.line, c);
