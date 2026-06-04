@@ -13,11 +13,16 @@ struct ParseError {
 pub(crate) struct Parser {
     pub(crate) tokens: Vec<Token>,
     pub(crate) current: usize,
+    pub(crate) encountered_error: bool,
 }
 
 impl Parser {
     pub(crate) fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, current: 0 }
+        Self {
+            tokens,
+            current: 0,
+            encountered_error: false,
+        }
     }
 
     fn is_at_end(&self) -> bool {
@@ -190,6 +195,7 @@ impl Parser {
     }
 
     pub(crate) fn parse(&mut self) -> Option<Expr> {
+        self.encountered_error = false;
         match self.expression() {
             Ok(expr) => Some(expr),
             Err(e) => {
@@ -197,6 +203,7 @@ impl Parser {
                     "[line {}] Error at '{}': Expect expression.",
                     e.token.line, e.token.lexeme
                 );
+                self.encountered_error = true;
                 None
             }
         }

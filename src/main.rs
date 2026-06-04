@@ -55,6 +55,10 @@ fn main() {
                 Some(ex) => ex.to_string(),
                 None => "null".to_string(),
             });
+
+            if parser.encountered_error {
+                exit(65);
+            }
         }
         _ => {
             eprintln!("Unknown command: {}", command);
