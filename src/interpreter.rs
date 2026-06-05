@@ -32,7 +32,7 @@ impl LoxValue {
             Ok(*num)
         } else {
             return Err(RuntimeError {
-                message: "Expected a number".to_string(),
+                message: "Operand must be a number.".to_string(),
             });
         }
     }
