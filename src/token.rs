@@ -70,6 +70,7 @@ impl fmt::Display for TokenType {
 }
 
 #[derive(Clone)]
+#[derive(Debug)]
 pub(crate) struct Token {
     pub(crate) token_type: TokenType,
     pub(crate) lexeme: String,

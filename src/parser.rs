@@ -1,13 +1,12 @@
-use std::any::Any;
-
 use crate::{
-    ast::{Expr, LiteralValue},
+    ast::{Expr, LiteralValue, Stmt},
     token::{Token, TokenType},
 };
 
-struct ParseError {
+#[derive(Debug)]
+pub(crate) struct ParseError {
     token: Token,
-    message: String,
+    pub(crate) message: String,
 }
 
 pub(crate) struct Parser {
@@ -26,7 +25,7 @@ impl Parser {
     }
 
     fn is_at_end(&self) -> bool {
-        self.current >= self.tokens.len()
+        self.current >= self.tokens.len() || self.peek().token_type == TokenType::Eof
     }
 
     fn peek(&self) -> &Token {
@@ -194,6 +193,38 @@ impl Parser {
         self.equality()
     }
 
+    fn print_statement(&mut self) -> Result<Stmt, ParseError> {
+        let expr = self.expression()?;
+        let tok = self.consume();
+        if let TokenType::Semicolon = tok.token_type {
+            return Ok(Stmt::Print(expr));
+        }
+        Err(ParseError {
+            token: tok.clone(),
+            message: "Expect ';' after value.".to_string(),
+        })
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
+        let expr = self.expression()?;
+        let tok = self.consume();
+        if let TokenType::Semicolon = tok.token_type {
+            return Ok(Stmt::Expression(expr));
+        }
+        Err(ParseError {
+            token: tok.clone(),
+            message: "Expect ';' after expression.".to_string(),
+        })
+    }
+
+    fn statement(&mut self) -> Result<Stmt, ParseError> {
+        if let TokenType::Print = self.peek().token_type {
+            self.consume();
+            return self.print_statement();
+        }
+        self.expression_statement()
+    }
+
     pub(crate) fn parse(&mut self) -> Option<Expr> {
         self.encountered_error = false;
         match self.expression() {
@@ -207,5 +238,15 @@ impl Parser {
                 None
             }
         }
+    }
+
+    pub(crate) fn parse_stmts(&mut self) -> Result<Vec<Stmt>, ParseError> {
+        let mut statements = vec![];
+
+        while !self.is_at_end() {
+            statements.push(self.statement()?);
+        }
+
+        Ok(statements)
     }
 }

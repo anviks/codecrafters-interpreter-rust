@@ -1,7 +1,6 @@
-use std::fmt::format;
-
 use crate::{helpers::format_float, token::Token};
 
+#[derive(Debug)]
 pub(crate) enum LiteralValue {
     Number(f64),
     Str(String),
@@ -9,6 +8,7 @@ pub(crate) enum LiteralValue {
     Nil,
 }
 
+#[derive(Debug)]
 pub(crate) enum Expr {
     Unary {
         operator: Token,
@@ -21,6 +21,12 @@ pub(crate) enum Expr {
     },
     Grouping(Box<Expr>),
     Literal(LiteralValue),
+}
+
+#[derive(Debug)]
+pub(crate) enum Stmt {
+    Expression(Expr),
+    Print(Expr),
 }
 
 impl LiteralValue {

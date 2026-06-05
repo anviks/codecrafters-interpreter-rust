@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expr, LiteralValue},
+    ast::{Expr, LiteralValue, Stmt},
     token::TokenType,
 };
 
@@ -100,7 +100,7 @@ pub(crate) fn evaluate(expr: Expr) -> Result<LoxValue, RuntimeError> {
                         Ok(LoxValue::Str(l_str + r_str.as_str()))
                     }
                     _ => Err(RuntimeError {
-                        message: "Operands must be two numbers or two strings".to_string(),
+                        message: "Operands must be two numbers or two strings.".to_string(),
                     }),
                 },
                 TokenType::Less => Ok(LoxValue::Bool(l.as_number()? < r.as_number()?)),
@@ -116,5 +116,25 @@ pub(crate) fn evaluate(expr: Expr) -> Result<LoxValue, RuntimeError> {
         }
         Expr::Grouping(ex) => Ok(evaluate(*ex)?),
         Expr::Literal(literal_value) => Ok(literal_value.into()),
+    }
+}
+
+pub(crate) fn execute(stmt: Stmt) -> Result<(), RuntimeError> {
+    match stmt {
+        Stmt::Expression(expr) => {
+            evaluate(expr);
+            Ok(())
+        }
+        Stmt::Print(expr) => {
+            let val = evaluate(expr)?;
+            println!("{}", val.to_string());
+            Ok(())
+        },
+    }
+}
+
+pub(crate) fn interpret(statements: Vec<Stmt>) {
+    for stmt in statements {
+        execute(stmt);
     }
 }
