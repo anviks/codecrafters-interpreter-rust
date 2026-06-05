@@ -59,7 +59,13 @@ impl LoxValue {
     }
 
     fn is_equal_to(&self, other: &Self) -> bool {
-        false
+        match (self, other) {
+            (LoxValue::Number(n1), LoxValue::Number(n2)) => n1 == n2,
+            (LoxValue::Str(s1), LoxValue::Str(s2)) => s1 == s2,
+            (LoxValue::Bool(b1), LoxValue::Bool(b2)) => b1 == b2,
+            (LoxValue::Nil, LoxValue::Nil) => true,
+            _ => false,
+        }
     }
 }
 
@@ -101,6 +107,8 @@ pub(crate) fn evaluate(expr: Expr) -> Result<LoxValue, RuntimeError> {
                 TokenType::LessEqual => Ok(LoxValue::Bool(l.as_number()? <= r.as_number()?)),
                 TokenType::Greater => Ok(LoxValue::Bool(l.as_number()? > r.as_number()?)),
                 TokenType::GreaterEqual => Ok(LoxValue::Bool(l.as_number()? >= r.as_number()?)),
+                TokenType::EqualEqual => Ok(LoxValue::Bool(l.is_equal_to(&r))),
+                TokenType::BangEqual => Ok(LoxValue::Bool(!l.is_equal_to(&r))),
                 typ => Err(RuntimeError {
                     message: format!("Bad operator for binary expression: {}", typ.to_string()),
                 }),
