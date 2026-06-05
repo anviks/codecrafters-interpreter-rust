@@ -110,7 +110,7 @@ fn main() {
 
             if parser.encountered_error || stmts.is_err() {
                 eprintln!("{}", stmts.unwrap_err().message);
-                exit(70);
+                exit(65);
             }
 
             interpret(stmts.unwrap());
