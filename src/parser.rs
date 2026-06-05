@@ -100,6 +100,7 @@ impl Parser {
                 }
                 Ok(Expr::Grouping(Box::new(expr)))
             }
+            TokenType::Identifier => {}
             _ => Err(ParseError {
                 token: self.previous().clone(),
                 message: String::from("Unexpected token."),
@@ -225,6 +226,41 @@ impl Parser {
         self.expression_statement()
     }
 
+    fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
+        let name_tok = self.consume().clone();
+        if let TokenType::Identifier = name_tok.token_type {
+            let mut init: Option<Expr> = None;
+            let eq_tok = self.peek();
+            if let TokenType::Equal = eq_tok.token_type {
+                init = Some(self.expression()?);
+            }
+
+            let semicolon = self.peek();
+            if let TokenType::Semicolon = semicolon.token_type {
+                self.consume();
+                return Ok(Stmt::Var {
+                    identifier: name_tok.lexeme,
+                    expression: init,
+                });
+            }
+
+            Err(ParseError {
+                token: semicolon.clone(),
+                message: "Expect ';' after variable declaration.".to_string(),
+            })
+        } else {
+            return Err(ParseError {
+                token: name_tok.clone(),
+                message: "Expect variable name.".to_string(),
+            });
+        }
+    }
+
+    fn declaration(&mut self) -> Result<Stmt, ParseError> {
+        if let TokenType::Var = self.peek().token_type {}
+        self.statement()
+    }
+
     pub(crate) fn parse(&mut self) -> Option<Expr> {
         self.encountered_error = false;
         match self.expression() {
@@ -244,7 +280,7 @@ impl Parser {
         let mut statements = vec![];
 
         while !self.is_at_end() {
-            statements.push(self.statement()?);
+            statements.push(self.declaration()?);
         }
 
         Ok(statements)

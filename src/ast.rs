@@ -27,6 +27,10 @@ pub(crate) enum Expr {
 pub(crate) enum Stmt {
     Expression(Expr),
     Print(Expr),
+    Var {
+        identifier: String,
+        expression: Option<Expr>,
+    },
 }
 
 impl LiteralValue {
