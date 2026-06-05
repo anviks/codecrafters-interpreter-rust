@@ -1,9 +1,9 @@
 mod ast;
 mod helpers;
+mod interpreter;
 mod lexer;
 mod parser;
 mod token;
-mod interpreter;
 
 use std::{env, fs, process::exit};
 
@@ -52,10 +52,13 @@ fn main() {
 
             let mut parser = Parser::new(tokens);
             let expr = parser.parse();
-            println!("{}", match expr {
-                Some(ex) => ex.to_string(),
-                None => String::new(),
-            });
+            println!(
+                "{}",
+                match expr {
+                    Some(ex) => ex.to_string(),
+                    None => String::new(),
+                }
+            );
 
             if parser.encountered_error {
                 exit(65);
@@ -83,7 +86,10 @@ fn main() {
 
             match evaluate(expr.unwrap()) {
                 Ok(val) => println!("{}", val.to_string()),
-                Err(e) => eprintln!("{}", e.message),
+                Err(e) => {
+                    eprintln!("{}", e.message);
+                    exit(70);
+                }
             }
         }
         _ => {
