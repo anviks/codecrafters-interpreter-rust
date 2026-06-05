@@ -36,14 +36,27 @@ impl Parser {
         &self.tokens[self.current - 1]
     }
 
-    fn consume(&mut self) -> &Token {
+    fn consume_any(&mut self) -> &Token {
         let index = self.current;
         self.current += 1;
         &self.tokens[index]
     }
 
+    fn consume(&mut self, token_type: TokenType, err_msg: &str) -> Result<Token, ParseError> {
+        let token = self.peek().clone();
+        if token.token_type == token_type {
+            self.current += 1;
+            Ok(token)
+        } else {
+            Err(ParseError {
+                message: err_msg.to_string(),
+                token,
+            })
+        }
+    }
+
     fn synchronize(&mut self) {
-        self.consume();
+        self.consume_any();
 
         while !self.is_at_end() {
             if self.previous().token_type == TokenType::Semicolon {
@@ -59,7 +72,7 @@ impl Parser {
                 | TokenType::While
                 | TokenType::Print
                 | TokenType::Return => return,
-                _ => self.consume(),
+                _ => self.consume_any(),
             };
         }
     }
@@ -74,7 +87,7 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Result<Expr, ParseError> {
-        match &self.consume().token_type {
+        match &self.consume_any().token_type {
             TokenType::False => Ok(Expr::Literal(LiteralValue::Bool(false))),
             TokenType::True => Ok(Expr::Literal(LiteralValue::Bool(true))),
             TokenType::Nil => Ok(Expr::Literal(LiteralValue::Nil)),
@@ -92,12 +105,7 @@ impl Parser {
             ))),
             TokenType::LeftParen => {
                 let expr = self.expression()?;
-                if self.consume().token_type != TokenType::RightParen {
-                    return Err(ParseError {
-                        token: self.previous().clone(),
-                        message: String::from("Expected ')' after expression."),
-                    });
-                }
+                self.consume(TokenType::RightParen, "Expected ')' after expression.");
                 Ok(Expr::Grouping(Box::new(expr)))
             }
             TokenType::Identifier => {}
@@ -110,7 +118,7 @@ impl Parser {
 
     fn unary(&mut self) -> Result<Expr, ParseError> {
         if self.matches(&[TokenType::Bang, TokenType::Minus]) {
-            let operator = self.consume().clone();
+            let operator = self.consume_any().clone();
             let right = self.unary()?;
             return Ok(Expr::Unary {
                 operator,
@@ -125,7 +133,7 @@ impl Parser {
         let mut expr = self.unary()?;
 
         while self.matches(&[TokenType::Slash, TokenType::Star]) {
-            let operator = self.consume().clone();
+            let operator = self.consume_any().clone();
             let right = self.unary()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -141,7 +149,7 @@ impl Parser {
         let mut expr = self.factor()?;
 
         while self.matches(&[TokenType::Minus, TokenType::Plus]) {
-            let operator = self.consume().clone();
+            let operator = self.consume_any().clone();
             let right = self.factor()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -162,7 +170,7 @@ impl Parser {
             TokenType::Less,
             TokenType::LessEqual,
         ]) {
-            let operator = self.consume().clone();
+            let operator = self.consume_any().clone();
             let right = self.term()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -178,7 +186,7 @@ impl Parser {
         let mut expr = self.comparison()?;
 
         while self.matches(&[TokenType::BangEqual, TokenType::EqualEqual]) {
-            let operator = self.consume().clone();
+            let operator = self.consume_any().clone();
             let right = self.comparison()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -196,64 +204,43 @@ impl Parser {
 
     fn print_statement(&mut self) -> Result<Stmt, ParseError> {
         let expr = self.expression()?;
-        let tok = self.consume();
-        if let TokenType::Semicolon = tok.token_type {
-            return Ok(Stmt::Print(expr));
-        }
-        Err(ParseError {
-            token: tok.clone(),
-            message: "Expect ';' after value.".to_string(),
-        })
+        self.consume(TokenType::Semicolon, "Expect ';' after value.");
+        Ok(Stmt::Print(expr))
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
         let expr = self.expression()?;
-        let tok = self.consume();
-        if let TokenType::Semicolon = tok.token_type {
-            return Ok(Stmt::Expression(expr));
-        }
-        Err(ParseError {
-            token: tok.clone(),
-            message: "Expect ';' after expression.".to_string(),
-        })
+        self.consume(TokenType::Semicolon, "Expect ';' after expression.");
+
+        Ok(Stmt::Expression(expr))
     }
 
     fn statement(&mut self) -> Result<Stmt, ParseError> {
         if let TokenType::Print = self.peek().token_type {
-            self.consume();
+            self.consume_any();
             return self.print_statement();
         }
         self.expression_statement()
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
-        let name_tok = self.consume().clone();
-        if let TokenType::Identifier = name_tok.token_type {
-            let mut init: Option<Expr> = None;
-            let eq_tok = self.peek();
-            if let TokenType::Equal = eq_tok.token_type {
-                init = Some(self.expression()?);
-            }
+        let name_tok = self.consume(TokenType::Identifier, "Expect variable name.")?;
 
-            let semicolon = self.peek();
-            if let TokenType::Semicolon = semicolon.token_type {
-                self.consume();
-                return Ok(Stmt::Var {
-                    identifier: name_tok.lexeme,
-                    expression: init,
-                });
-            }
-
-            Err(ParseError {
-                token: semicolon.clone(),
-                message: "Expect ';' after variable declaration.".to_string(),
-            })
-        } else {
-            return Err(ParseError {
-                token: name_tok.clone(),
-                message: "Expect variable name.".to_string(),
-            });
+        let mut init: Option<Expr> = None;
+        let eq_tok = self.peek();
+        if let TokenType::Equal = eq_tok.token_type {
+            init = Some(self.expression()?);
         }
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.",
+        )?;
+
+        Ok(Stmt::Var {
+            identifier: name_tok.lexeme,
+            expression: init,
+        })
     }
 
     fn declaration(&mut self) -> Result<Stmt, ParseError> {
