@@ -122,7 +122,7 @@ pub(crate) fn evaluate(expr: Expr) -> Result<LoxValue, RuntimeError> {
 pub(crate) fn execute(stmt: Stmt) -> Result<(), RuntimeError> {
     match stmt {
         Stmt::Expression(expr) => {
-            evaluate(expr);
+            evaluate(expr)?;
             Ok(())
         }
         Stmt::Print(expr) => {
