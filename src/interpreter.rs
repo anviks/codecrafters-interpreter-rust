@@ -133,8 +133,9 @@ pub(crate) fn execute(stmt: Stmt) -> Result<(), RuntimeError> {
     }
 }
 
-pub(crate) fn interpret(statements: Vec<Stmt>) {
+pub(crate) fn interpret(statements: Vec<Stmt>) -> Result<(), RuntimeError> {
     for stmt in statements {
-        execute(stmt);
+        execute(stmt)?;
     }
+    Ok(())
 }

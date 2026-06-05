@@ -113,7 +113,13 @@ fn main() {
                 exit(65);
             }
 
-            interpret(stmts.unwrap());
+            match interpret(stmts.unwrap()) {
+                Ok(_) => {},
+                Err(e) => {
+                    eprintln!("{}", e.message);
+                    exit(70);
+                },
+            }
         }
         _ => {
             eprintln!("Unknown command: {}", command);
