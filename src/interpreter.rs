@@ -48,7 +48,7 @@ impl LoxValue {
 
     fn is_truthy(&self) -> bool {
         if let LoxValue::Bool(b) = self {
-            return !*b;
+            return *b;
         }
 
         if let LoxValue::Nil = self {
