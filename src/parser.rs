@@ -36,13 +36,13 @@ impl Parser {
         &self.tokens[self.current - 1]
     }
 
-    fn consume_any(&mut self) -> &Token {
+    fn advance(&mut self) -> &Token {
         let index = self.current;
         self.current += 1;
         &self.tokens[index]
     }
 
-    fn consume(&mut self, token_type: TokenType, err_msg: &str) -> Result<Token, ParseError> {
+    fn expect(&mut self, token_type: TokenType, err_msg: &str) -> Result<Token, ParseError> {
         let token = self.peek().clone();
         if token.token_type == token_type {
             self.current += 1;
@@ -55,8 +55,18 @@ impl Parser {
         }
     }
 
+    fn matches(&mut self, types: &[TokenType]) -> bool {
+        for typ in types {
+            if self.peek().token_type == *typ {
+                self.advance();
+                return true;
+            }
+        }
+        false
+    }
+
     fn synchronize(&mut self) {
-        self.consume_any();
+        self.advance();
 
         while !self.is_at_end() {
             if self.previous().token_type == TokenType::Semicolon {
@@ -72,22 +82,13 @@ impl Parser {
                 | TokenType::While
                 | TokenType::Print
                 | TokenType::Return => return,
-                _ => self.consume_any(),
+                _ => self.advance(),
             };
         }
     }
 
-    fn matches(&self, types: &[TokenType]) -> bool {
-        for typ in types {
-            if self.peek().token_type == *typ {
-                return true;
-            }
-        }
-        false
-    }
-
     fn primary(&mut self) -> Result<Expr, ParseError> {
-        match &self.consume_any().token_type {
+        match &self.advance().token_type {
             TokenType::False => Ok(Expr::Literal(LiteralValue::Bool(false))),
             TokenType::True => Ok(Expr::Literal(LiteralValue::Bool(true))),
             TokenType::Nil => Ok(Expr::Literal(LiteralValue::Nil)),
@@ -105,7 +106,7 @@ impl Parser {
             ))),
             TokenType::LeftParen => {
                 let expr = self.expression()?;
-                self.consume(TokenType::RightParen, "Expected ')' after expression.");
+                self.expect(TokenType::RightParen, "Expected ')' after expression.");
                 Ok(Expr::Grouping(Box::new(expr)))
             }
             TokenType::Identifier => {}
@@ -118,7 +119,7 @@ impl Parser {
 
     fn unary(&mut self) -> Result<Expr, ParseError> {
         if self.matches(&[TokenType::Bang, TokenType::Minus]) {
-            let operator = self.consume_any().clone();
+            let operator = self.previous().clone();
             let right = self.unary()?;
             return Ok(Expr::Unary {
                 operator,
@@ -133,7 +134,7 @@ impl Parser {
         let mut expr = self.unary()?;
 
         while self.matches(&[TokenType::Slash, TokenType::Star]) {
-            let operator = self.consume_any().clone();
+            let operator = self.previous().clone();
             let right = self.unary()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -149,7 +150,7 @@ impl Parser {
         let mut expr = self.factor()?;
 
         while self.matches(&[TokenType::Minus, TokenType::Plus]) {
-            let operator = self.consume_any().clone();
+            let operator = self.previous().clone();
             let right = self.factor()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -170,7 +171,7 @@ impl Parser {
             TokenType::Less,
             TokenType::LessEqual,
         ]) {
-            let operator = self.consume_any().clone();
+            let operator = self.previous().clone();
             let right = self.term()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -186,7 +187,7 @@ impl Parser {
         let mut expr = self.comparison()?;
 
         while self.matches(&[TokenType::BangEqual, TokenType::EqualEqual]) {
-            let operator = self.consume_any().clone();
+            let operator = self.previous().clone();
             let right = self.comparison()?;
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -204,35 +205,34 @@ impl Parser {
 
     fn print_statement(&mut self) -> Result<Stmt, ParseError> {
         let expr = self.expression()?;
-        self.consume(TokenType::Semicolon, "Expect ';' after value.");
+        self.expect(TokenType::Semicolon, "Expect ';' after value.");
         Ok(Stmt::Print(expr))
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
         let expr = self.expression()?;
-        self.consume(TokenType::Semicolon, "Expect ';' after expression.");
+        self.expect(TokenType::Semicolon, "Expect ';' after expression.");
 
         Ok(Stmt::Expression(expr))
     }
 
     fn statement(&mut self) -> Result<Stmt, ParseError> {
-        if let TokenType::Print = self.peek().token_type {
-            self.consume_any();
-            return self.print_statement();
+        if self.matches(&[TokenType::Print]) {
+            self.print_statement()
+        } else {
+            self.expression_statement()
         }
-        self.expression_statement()
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
-        let name_tok = self.consume(TokenType::Identifier, "Expect variable name.")?;
+        let name_tok = self.expect(TokenType::Identifier, "Expect variable name.")?;
 
         let mut init: Option<Expr> = None;
-        let eq_tok = self.peek();
-        if let TokenType::Equal = eq_tok.token_type {
+        if self.matches(&[TokenType::Equal]) {
             init = Some(self.expression()?);
         }
 
-        self.consume(
+        self.expect(
             TokenType::Semicolon,
             "Expect ';' after variable declaration.",
         )?;
@@ -244,8 +244,11 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Result<Stmt, ParseError> {
-        if let TokenType::Var = self.peek().token_type {}
-        self.statement()
+        if self.matches(&[TokenType::Var]) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        }
     }
 
     pub(crate) fn parse(&mut self) -> Option<Expr> {
