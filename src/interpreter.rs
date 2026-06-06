@@ -131,7 +131,7 @@ impl Interpreter {
             Expr::Variable(token) => Ok(self.environment.get(token)?.clone()),
             Expr::Assign { left, right } => {
                 let value = self.evaluate(*right)?;
-                self.environment.define(left.lexeme, value.clone());
+                self.environment.assign(left, value.clone())?;
                 Ok(value)
             }
         }
