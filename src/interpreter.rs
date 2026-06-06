@@ -81,7 +81,7 @@ impl Interpreter {
         }
     }
 
-    pub(crate) fn evaluate(&self, expr: Expr) -> Result<LoxValue, RuntimeError> {
+    pub(crate) fn evaluate(&mut self, expr: Expr) -> Result<LoxValue, RuntimeError> {
         match expr {
             Expr::Unary { operator, right } => {
                 let r = self.evaluate(*right)?;
@@ -129,6 +129,11 @@ impl Interpreter {
             Expr::Grouping(ex) => Ok(self.evaluate(*ex)?),
             Expr::Literal(literal_value) => Ok(literal_value.into()),
             Expr::Variable(token) => Ok(self.environment.get(token)?.clone()),
+            Expr::Assign { left, right } => {
+                let value = self.evaluate(*right)?;
+                self.environment.define(left.lexeme, value.clone());
+                Ok(value)
+            }
         }
     }
 
@@ -147,7 +152,10 @@ impl Interpreter {
                 identifier,
                 expression,
             } => match expression {
-                Some(expr) => Ok(self.environment.define(identifier, self.evaluate(expr)?)),
+                Some(expr) => {
+                    let value = self.evaluate(expr)?;
+                    Ok(self.environment.define(identifier, value))
+                }
                 None => Ok(self.environment.define(identifier, LoxValue::Nil)),
             },
         }
