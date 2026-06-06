@@ -106,7 +106,7 @@ impl Parser {
             ))),
             TokenType::LeftParen => {
                 let expr = self.expression()?;
-                self.expect(TokenType::RightParen, "Expected ')' after expression.");
+                self.expect(TokenType::RightParen, "Expected ')' after expression.")?;
                 Ok(Expr::Grouping(Box::new(expr)))
             }
             TokenType::Identifier => {}
@@ -205,14 +205,13 @@ impl Parser {
 
     fn print_statement(&mut self) -> Result<Stmt, ParseError> {
         let expr = self.expression()?;
-        self.expect(TokenType::Semicolon, "Expect ';' after value.");
+        self.expect(TokenType::Semicolon, "Expect ';' after value.")?;
         Ok(Stmt::Print(expr))
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
         let expr = self.expression()?;
-        self.expect(TokenType::Semicolon, "Expect ';' after expression.");
-
+        self.expect(TokenType::Semicolon, "Expect ';' after expression.")?;
         Ok(Stmt::Expression(expr))
     }
 
