@@ -1,4 +1,5 @@
 mod ast;
+mod environment;
 mod helpers;
 mod interpreter;
 mod lexer;
@@ -7,7 +8,11 @@ mod token;
 
 use std::{env, fs, process::exit};
 
-use crate::{interpreter::{evaluate, interpret}, lexer::Lexer, parser::Parser};
+use crate::{
+    interpreter::Interpreter,
+    lexer::Lexer,
+    parser::Parser,
+};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -84,7 +89,8 @@ fn main() {
                 exit(65);
             }
 
-            match evaluate(expr.unwrap()) {
+            let interpreter = Interpreter::new();
+            match interpreter.evaluate(expr.unwrap()) {
                 Ok(val) => println!("{}", val.to_string()),
                 Err(e) => {
                     eprintln!("{}", e.message);
@@ -113,12 +119,13 @@ fn main() {
                 exit(65);
             }
 
-            match interpret(stmts.unwrap()) {
-                Ok(_) => {},
+            let mut interpreter = Interpreter::new();
+            match interpreter.interpret(stmts.unwrap()) {
+                Ok(_) => {}
                 Err(e) => {
                     eprintln!("{}", e.message);
                     exit(70);
-                },
+                }
             }
         }
         _ => {

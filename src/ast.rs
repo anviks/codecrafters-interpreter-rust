@@ -21,6 +21,7 @@ pub(crate) enum Expr {
     },
     Grouping(Box<Expr>),
     Literal(LiteralValue),
+    Variable(Token),
 }
 
 #[derive(Debug)]
@@ -62,6 +63,7 @@ impl Expr {
             ),
             Expr::Grouping(expr) => format!("(group {})", expr.to_string()),
             Expr::Literal(literal_value) => literal_value.to_string(),
+            Expr::Variable(token) => token.lexeme.to_string(),
         }
     }
 }
