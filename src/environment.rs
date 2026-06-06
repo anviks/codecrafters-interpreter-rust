@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     interpreter::{LoxValue, RuntimeError},
@@ -7,7 +7,7 @@ use crate::{
 
 pub(crate) struct Environment {
     variables: HashMap<String, LoxValue>,
-    pub(crate) parent: Option<Box<Environment>>,
+    parent: Option<Rc<RefCell<Environment>>>,
 }
 
 impl Environment {
@@ -15,6 +15,13 @@ impl Environment {
         Self {
             variables: HashMap::new(),
             parent: None,
+        }
+    }
+
+    pub(crate) fn new_with_parent(parent: Rc<RefCell<Environment>>) -> Self {
+        Self {
+            variables: HashMap::new(),
+            parent: Some(parent),
         }
     }
 
@@ -29,19 +36,19 @@ impl Environment {
         }
 
         match &mut self.parent {
-            Some(parent) => parent.assign(name, value),
+            Some(parent) => parent.borrow_mut().assign(name, value),
             None => Err(RuntimeError {
                 message: format!("Undefined variable '{}'.", name.lexeme),
             }),
         }
     }
 
-    pub(crate) fn get(&self, name: Token) -> Result<&LoxValue, RuntimeError> {
+    pub(crate) fn get(&self, name: Token) -> Result<LoxValue, RuntimeError> {
         let value = self.variables.get(&name.lexeme);
         match value {
-            Some(val) => Ok(val),
+            Some(val) => Ok(val.clone()),
             None => match &self.parent {
-                Some(parent) => parent.get(name),
+                Some(parent) => parent.borrow().get(name),
                 None => Err(RuntimeError {
                     message: format!("Undefined variable '{}'.", name.lexeme),
                 }),

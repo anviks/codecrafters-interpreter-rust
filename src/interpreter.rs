@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::{
     ast::{Expr, LiteralValue, Stmt},
     environment::Environment,
@@ -5,7 +7,7 @@ use crate::{
 };
 
 pub(crate) struct Interpreter {
-    environment: Environment,
+    environment: Rc<RefCell<Environment>>,
 }
 
 pub(crate) struct RuntimeError {
@@ -77,7 +79,7 @@ impl LoxValue {
 impl Interpreter {
     pub(crate) fn new() -> Self {
         Self {
-            environment: Environment::new(),
+            environment: Rc::new(RefCell::new(Environment::new())),
         }
     }
 
@@ -128,10 +130,10 @@ impl Interpreter {
             }
             Expr::Grouping(ex) => Ok(self.evaluate(*ex)?),
             Expr::Literal(literal_value) => Ok(literal_value.into()),
-            Expr::Variable(token) => Ok(self.environment.get(token)?.clone()),
+            Expr::Variable(token) => Ok(self.environment.borrow().get(token)?.clone()),
             Expr::Assign { left, right } => {
                 let value = self.evaluate(*right)?;
-                self.environment.assign(left, value.clone())?;
+                self.environment.borrow_mut().assign(left, value.clone())?;
                 Ok(value)
             }
         }
@@ -154,10 +156,23 @@ impl Interpreter {
             } => match expression {
                 Some(expr) => {
                     let value = self.evaluate(expr)?;
-                    Ok(self.environment.define(identifier, value))
+                    Ok(self.environment.borrow_mut().define(identifier, value))
                 }
-                None => Ok(self.environment.define(identifier, LoxValue::Nil)),
+                None => Ok(self
+                    .environment
+                    .borrow_mut()
+                    .define(identifier, LoxValue::Nil)),
             },
+            Stmt::Block(stmts) => {
+                let previous = Rc::clone(&self.environment);
+                let child = Environment::new_with_parent(Rc::clone(&previous));
+                self.environment = Rc::new(RefCell::new(child));
+
+                let result = stmts.into_iter().try_for_each(|stmt| self.execute(stmt));
+                self.environment = previous;
+
+                result
+            }
         }
     }
 
