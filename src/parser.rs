@@ -238,9 +238,23 @@ impl Parser {
         Ok(Stmt::Expression(expr))
     }
 
+    fn block(&mut self) -> Result<Stmt, ParseError> {
+        let mut statements = vec![];
+
+        while self.peek().token_type != TokenType::RightBrace {
+            statements.push(self.declaration()?);
+        }
+
+        self.expect(TokenType::RightBrace, "Expect '}' after block.")?;
+
+        Ok(Stmt::Block(statements))
+    }
+
     fn statement(&mut self) -> Result<Stmt, ParseError> {
         if self.matches(&[TokenType::Print]) {
             self.print_statement()
+        } else if self.matches(&[TokenType::LeftBrace]) {
+            self.block()
         } else {
             self.expression_statement()
         }

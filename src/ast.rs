@@ -36,6 +36,7 @@ pub(crate) enum Stmt {
         identifier: String,
         expression: Option<Expr>,
     },
+    Block(Vec<Stmt>),
 }
 
 impl LiteralValue {
