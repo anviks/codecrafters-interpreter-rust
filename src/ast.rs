@@ -26,6 +26,11 @@ pub(crate) enum Expr {
         left: Token,
         right: Box<Expr>,
     },
+    Logical {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
+    },
 }
 
 #[derive(Debug)]
@@ -78,6 +83,16 @@ impl Expr {
                 left: name,
                 right: value,
             } => format!("(assign {} {})", name.lexeme, value.to_string()),
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => format!(
+                "({} {} {})",
+                operator.lexeme,
+                left.to_string(),
+                right.to_string()
+            ),
         }
     }
 }

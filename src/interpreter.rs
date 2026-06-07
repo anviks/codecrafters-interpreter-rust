@@ -136,6 +136,19 @@ impl Interpreter {
                 self.environment.borrow_mut().assign(left, value.clone())?;
                 Ok(value)
             }
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => {
+                let l = self.evaluate(*left)?;
+
+                match operator.token_type {
+                    TokenType::And if !l.is_truthy() => Ok(l),
+                    TokenType::Or if l.is_truthy() => Ok(l),
+                    _ => self.evaluate(*right),
+                }
+            }
         }
     }
 
@@ -173,7 +186,11 @@ impl Interpreter {
 
                 result
             }
-            Stmt::If { condition, then_branch, else_branch } => {
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 if self.evaluate(condition)?.is_truthy() {
                     self.execute(*then_branch)?;
                 } else if let Some(stmt) = else_branch {
@@ -181,7 +198,7 @@ impl Interpreter {
                 }
 
                 Ok(())
-            },
+            }
         }
     }
 
