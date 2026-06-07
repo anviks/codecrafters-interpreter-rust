@@ -37,6 +37,11 @@ pub(crate) enum Stmt {
         expression: Option<Expr>,
     },
     Block(Vec<Stmt>),
+    If {
+        condition: Expr,
+        then_branch: Box<Stmt>,
+        else_branch: Option<Box<Stmt>>,
+    },
 }
 
 impl LiteralValue {

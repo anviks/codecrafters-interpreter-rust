@@ -173,6 +173,15 @@ impl Interpreter {
 
                 result
             }
+            Stmt::If { condition, then_branch, else_branch } => {
+                if self.evaluate(condition)?.is_truthy() {
+                    self.execute(*then_branch)?;
+                } else if let Some(stmt) = else_branch {
+                    self.execute(*stmt)?;
+                }
+
+                Ok(())
+            },
         }
     }
 

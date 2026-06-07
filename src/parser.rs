@@ -238,6 +238,25 @@ impl Parser {
         Ok(Stmt::Expression(expr))
     }
 
+    fn if_statement(&mut self) -> Result<Stmt, ParseError> {
+        self.expect(TokenType::LeftParen, "Expect '(' after 'if'.")?;
+        let condition = self.expression()?;
+        self.expect(TokenType::RightParen, "Expect ')' after if condition.")?;
+
+        let then_branch = self.statement()?;
+        let mut else_branch: Option<Box<Stmt>> = None;
+
+        if self.matches(&[TokenType::Else]) {
+            else_branch = Some(Box::new(self.statement()?));
+        }
+
+        Ok(Stmt::If {
+            condition,
+            then_branch: Box::new(then_branch),
+            else_branch,
+        })
+    }
+
     fn block(&mut self) -> Result<Stmt, ParseError> {
         let mut statements = vec![];
 
@@ -255,6 +274,8 @@ impl Parser {
             self.print_statement()
         } else if self.matches(&[TokenType::LeftBrace]) {
             self.block()
+        } else if self.matches(&[TokenType::If]) {
+            self.if_statement()
         } else {
             self.expression_statement()
         }
