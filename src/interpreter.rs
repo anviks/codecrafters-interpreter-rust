@@ -83,10 +83,10 @@ impl Interpreter {
         }
     }
 
-    pub(crate) fn evaluate(&mut self, expr: Expr) -> Result<LoxValue, RuntimeError> {
+    pub(crate) fn evaluate(&mut self, expr: &Expr) -> Result<LoxValue, RuntimeError> {
         match expr {
             Expr::Unary { operator, right } => {
-                let r = self.evaluate(*right)?;
+                let r = self.evaluate(right)?;
 
                 match operator.token_type {
                     TokenType::Minus => Ok(LoxValue::Number(-r.as_number()?)),
@@ -99,10 +99,10 @@ impl Interpreter {
                 operator,
                 right,
             } => {
-                let l = self.evaluate(*left)?;
-                let r = self.evaluate(*right)?;
+                let l = self.evaluate(left)?;
+                let r = self.evaluate(right)?;
 
-                match operator.token_type {
+                match &operator.token_type {
                     TokenType::Slash => Ok(LoxValue::Number(l.as_number()? / r.as_number()?)),
                     TokenType::Star => Ok(LoxValue::Number(l.as_number()? * r.as_number()?)),
                     TokenType::Minus => Ok(LoxValue::Number(l.as_number()? - r.as_number()?)),
@@ -128,12 +128,14 @@ impl Interpreter {
                     }),
                 }
             }
-            Expr::Grouping(ex) => Ok(self.evaluate(*ex)?),
-            Expr::Literal(literal_value) => Ok(literal_value.into()),
-            Expr::Variable(token) => Ok(self.environment.borrow().get(token)?.clone()),
+            Expr::Grouping(ex) => Ok(self.evaluate(ex)?),
+            Expr::Literal(literal_value) => Ok(literal_value.clone().into()),
+            Expr::Variable(token) => Ok(self.environment.borrow().get(token.clone())?.clone()),
             Expr::Assign { left, right } => {
-                let value = self.evaluate(*right)?;
-                self.environment.borrow_mut().assign(left, value.clone())?;
+                let value = self.evaluate(right)?;
+                self.environment
+                    .borrow_mut()
+                    .assign(left.clone(), value.clone())?;
                 Ok(value)
             }
             Expr::Logical {
@@ -141,18 +143,18 @@ impl Interpreter {
                 operator,
                 right,
             } => {
-                let l = self.evaluate(*left)?;
+                let l = self.evaluate(left)?;
 
                 match operator.token_type {
                     TokenType::And if !l.is_truthy() => Ok(l),
                     TokenType::Or if l.is_truthy() => Ok(l),
-                    _ => self.evaluate(*right),
+                    _ => self.evaluate(right),
                 }
             }
         }
     }
 
-    pub(crate) fn execute(&mut self, stmt: Stmt) -> Result<(), RuntimeError> {
+    pub(crate) fn execute(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
         match stmt {
             Stmt::Expression(expr) => {
                 self.evaluate(expr)?;
@@ -169,12 +171,15 @@ impl Interpreter {
             } => match expression {
                 Some(expr) => {
                     let value = self.evaluate(expr)?;
-                    Ok(self.environment.borrow_mut().define(identifier, value))
+                    Ok(self
+                        .environment
+                        .borrow_mut()
+                        .define(identifier.to_string(), value))
                 }
                 None => Ok(self
                     .environment
                     .borrow_mut()
-                    .define(identifier, LoxValue::Nil)),
+                    .define(identifier.to_string(), LoxValue::Nil)),
             },
             Stmt::Block(stmts) => {
                 let previous = Rc::clone(&self.environment);
@@ -192,11 +197,17 @@ impl Interpreter {
                 else_branch,
             } => {
                 if self.evaluate(condition)?.is_truthy() {
-                    self.execute(*then_branch)?;
+                    self.execute(then_branch)?;
                 } else if let Some(stmt) = else_branch {
-                    self.execute(*stmt)?;
+                    self.execute(stmt)?;
                 }
 
+                Ok(())
+            }
+            Stmt::While { condition, body } => {
+                while self.evaluate(condition)?.is_truthy() {
+                    self.execute(body)?;
+                }
                 Ok(())
             }
         }
@@ -204,7 +215,7 @@ impl Interpreter {
 
     pub(crate) fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
         for stmt in statements {
-            self.execute(stmt)?;
+            self.execute(&stmt)?;
         }
         Ok(())
     }

@@ -90,7 +90,7 @@ fn main() {
             }
 
             let mut interpreter = Interpreter::new();
-            match interpreter.evaluate(expr.unwrap()) {
+            match interpreter.evaluate(&expr.unwrap()) {
                 Ok(val) => println!("{}", val.to_string()),
                 Err(e) => {
                     eprintln!("{}", e.message);

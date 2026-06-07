@@ -1,6 +1,7 @@
 use crate::{helpers::format_float, token::Token};
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub(crate) enum LiteralValue {
     Number(f64),
     Str(String),
@@ -46,6 +47,10 @@ pub(crate) enum Stmt {
         condition: Expr,
         then_branch: Box<Stmt>,
         else_branch: Option<Box<Stmt>>,
+    },
+    While {
+        condition: Expr,
+        body: Box<Stmt>,
     },
 }
 

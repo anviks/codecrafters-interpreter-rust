@@ -289,6 +289,18 @@ impl Parser {
         })
     }
 
+    fn while_statement(&mut self) -> Result<Stmt, ParseError> {
+        self.expect(TokenType::LeftParen, "Expect '(' after 'while'.")?;
+        let condition = self.expression()?;
+        self.expect(TokenType::RightParen, "Expect ')' after condition.")?;
+        let body = self.statement()?;
+
+        Ok(Stmt::While {
+            condition,
+            body: Box::new(body),
+        })
+    }
+
     fn block(&mut self) -> Result<Stmt, ParseError> {
         let mut statements = vec![];
 
@@ -308,6 +320,8 @@ impl Parser {
             self.block()
         } else if self.matches(&[TokenType::If]) {
             self.if_statement()
+        } else if self.matches(&[TokenType::While]) {
+            self.while_statement()
         } else {
             self.expression_statement()
         }
