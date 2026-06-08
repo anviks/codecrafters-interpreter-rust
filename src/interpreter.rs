@@ -1,85 +1,29 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::{
-    ast::{Expr, LiteralValue, Stmt},
+    ast::{Expr, Stmt},
     environment::Environment,
+    natives::clock,
     token::TokenType,
+    value::{LoxValue, RuntimeError},
 };
 
 pub(crate) struct Interpreter {
     environment: Rc<RefCell<Environment>>,
 }
 
-pub(crate) struct RuntimeError {
-    pub(crate) message: String,
-}
-
-#[derive(Debug, Clone)]
-pub(crate) enum LoxValue {
-    Number(f64),
-    Str(String),
-    Bool(bool),
-    Nil,
-}
-
-impl From<LiteralValue> for LoxValue {
-    fn from(literal: LiteralValue) -> Self {
-        match literal {
-            LiteralValue::Number(n) => LoxValue::Number(n),
-            LiteralValue::Str(s) => LoxValue::Str(s),
-            LiteralValue::Bool(b) => LoxValue::Bool(b),
-            LiteralValue::Nil => LoxValue::Nil,
-        }
-    }
-}
-
-impl LoxValue {
-    fn as_number(&self) -> Result<f64, RuntimeError> {
-        if let LoxValue::Number(num) = self {
-            Ok(*num)
-        } else {
-            return Err(RuntimeError {
-                message: "Operand must be a number.".to_string(),
-            });
-        }
-    }
-
-    pub(crate) fn to_string(&self) -> String {
-        match self {
-            LoxValue::Number(n) => n.to_string(),
-            LoxValue::Str(s) => s.to_string(),
-            LoxValue::Bool(b) => b.to_string(),
-            LoxValue::Nil => String::from("nil"),
-        }
-    }
-
-    fn is_truthy(&self) -> bool {
-        if let LoxValue::Bool(b) = self {
-            return *b;
-        }
-
-        if let LoxValue::Nil = self {
-            return false;
-        }
-
-        true
-    }
-
-    fn is_equal_to(&self, other: &Self) -> bool {
-        match (self, other) {
-            (LoxValue::Number(n1), LoxValue::Number(n2)) => n1 == n2,
-            (LoxValue::Str(s1), LoxValue::Str(s2)) => s1 == s2,
-            (LoxValue::Bool(b1), LoxValue::Bool(b2)) => b1 == b2,
-            (LoxValue::Nil, LoxValue::Nil) => true,
-            _ => false,
-        }
-    }
-}
-
 impl Interpreter {
     pub(crate) fn new() -> Self {
+        let mut env = Environment::new();
+        let clock_fn = LoxValue::NativeFunction {
+            name: "clock".to_string(),
+            arity: 0,
+            func: clock,
+        };
+        env.define("clock".to_string(), clock_fn);
+
         Self {
-            environment: Rc::new(RefCell::new(Environment::new())),
+            environment: Rc::new(RefCell::new(env)),
         }
     }
 
@@ -150,6 +94,20 @@ impl Interpreter {
                     TokenType::Or if l.is_truthy() => Ok(l),
                     _ => self.evaluate(right),
                 }
+            }
+            Expr::Call {
+                callee,
+                paren,
+                arguments,
+            } => {
+                let callable = self.evaluate(callee)?;
+
+                let mut args = vec![];
+                for arg in arguments {
+                    args.push(self.evaluate(arg)?);
+                }
+
+                callable.call(self, args)
             }
         }
     }

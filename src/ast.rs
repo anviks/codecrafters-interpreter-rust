@@ -1,7 +1,6 @@
 use crate::{helpers::format_float, token::Token};
 
-#[derive(Debug)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub(crate) enum LiteralValue {
     Number(f64),
     Str(String),
@@ -31,6 +30,11 @@ pub(crate) enum Expr {
         left: Box<Expr>,
         operator: Token,
         right: Box<Expr>,
+    },
+    Call {
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>,
     },
 }
 
@@ -98,6 +102,7 @@ impl Expr {
                 left.to_string(),
                 right.to_string()
             ),
+            Expr::Call { callee, paren, arguments } => todo!(),
         }
     }
 }

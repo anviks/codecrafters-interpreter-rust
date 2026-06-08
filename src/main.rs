@@ -5,14 +5,12 @@ mod interpreter;
 mod lexer;
 mod parser;
 mod token;
+mod value;
+mod natives;
 
 use std::{env, fs, process::exit};
 
-use crate::{
-    interpreter::Interpreter,
-    lexer::Lexer,
-    parser::Parser,
-};
+use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
 
 fn main() {
     let args: Vec<String> = env::args().collect();

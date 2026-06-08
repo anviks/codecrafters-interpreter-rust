@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
-    interpreter::{LoxValue, RuntimeError},
+    value::{LoxValue, RuntimeError},
     token::Token,
 };
 
