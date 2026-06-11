@@ -125,7 +125,7 @@ impl LoxValue {
             LoxValue::Bool(b) => b.to_string(),
             LoxValue::Nil => String::from("nil"),
             LoxValue::Function(lox_function) => {
-                format!("<function {}>", lox_function.parameters.len())
+                format!("<fn {}>", lox_function.name.lexeme)
             }
             LoxValue::Class(lox_class) => format!("<class '{}'>", lox_class.arity),
             LoxValue::NativeFunction { name, arity, func } => {
