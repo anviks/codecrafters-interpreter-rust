@@ -8,7 +8,7 @@ pub(crate) enum LiteralValue {
     Nil,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Expr {
     Unary {
         operator: Token,
@@ -38,7 +38,7 @@ pub(crate) enum Expr {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Stmt {
     Expression(Expr),
     Print(Expr),
@@ -55,6 +55,15 @@ pub(crate) enum Stmt {
     While {
         condition: Expr,
         body: Box<Stmt>,
+    },
+    Function {
+        name: Token,
+        parameters: Vec<Token>,
+        body: Vec<Stmt>,
+    },
+    Return {
+        keyword: Token,
+        value: Expr,
     },
 }
 
@@ -102,7 +111,11 @@ impl Expr {
                 left.to_string(),
                 right.to_string()
             ),
-            Expr::Call { callee, paren, arguments } => todo!(),
+            Expr::Call {
+                callee,
+                paren,
+                arguments,
+            } => todo!(),
         }
     }
 }

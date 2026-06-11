@@ -5,11 +5,11 @@ use crate::{
     environment::Environment,
     natives::clock,
     token::TokenType,
-    value::{LoxValue, RuntimeError},
+    value::{ExecutionError, LoxFunction, LoxValue, RuntimeError},
 };
 
 pub(crate) struct Interpreter {
-    environment: Rc<RefCell<Environment>>,
+    pub(crate) environment: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
@@ -112,7 +112,21 @@ impl Interpreter {
         }
     }
 
-    pub(crate) fn execute(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
+    pub(crate) fn execute_block(
+        &mut self,
+        statements: &Vec<Stmt>,
+        environment: Rc<RefCell<Environment>>,
+    ) -> Result<(), ExecutionError> {
+        let previous = self.environment.clone();
+        self.environment = environment;
+
+        let result = statements.iter().try_for_each(|stmt| self.execute(&stmt));
+        self.environment = previous;
+
+        result
+    }
+
+    pub(crate) fn execute(&mut self, stmt: &Stmt) -> Result<(), ExecutionError> {
         match stmt {
             Stmt::Expression(expr) => {
                 self.evaluate(expr)?;
@@ -140,14 +154,8 @@ impl Interpreter {
                     .define(identifier.to_string(), LoxValue::Nil)),
             },
             Stmt::Block(stmts) => {
-                let previous = Rc::clone(&self.environment);
-                let child = Environment::new_with_parent(Rc::clone(&previous));
-                self.environment = Rc::new(RefCell::new(child));
-
-                let result = stmts.into_iter().try_for_each(|stmt| self.execute(stmt));
-                self.environment = previous;
-
-                result
+                let child = Environment::new_with_parent(self.environment.clone());
+                self.execute_block(stmts, Rc::new(RefCell::new(child)))
             }
             Stmt::If {
                 condition,
@@ -168,12 +176,37 @@ impl Interpreter {
                 }
                 Ok(())
             }
+            Stmt::Function {
+                name,
+                parameters,
+                body,
+            } => {
+                let function = LoxValue::Function(LoxFunction {
+                    name: name.clone(),
+                    parameters: parameters.clone(),
+                    body: body.clone(),
+                    closure: self.environment.clone(),
+                });
+                self.environment
+                    .borrow_mut()
+                    .define(name.lexeme.clone(), function);
+                Ok(())
+            }
+            Stmt::Return { keyword, value } => Err(ExecutionError::Return(self.evaluate(value)?)),
         }
     }
 
     pub(crate) fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
         for stmt in statements {
-            self.execute(&stmt)?;
+            match self.execute(&stmt) {
+                Ok(()) => (),
+                Err(ExecutionError::RuntimeError(err)) => return Err(err),
+                Err(ExecutionError::Return(_)) => {
+                    return Err(RuntimeError {
+                        message: "Cannot return from top-level code.".to_string(),
+                    });
+                }
+            }
         }
         Ok(())
     }

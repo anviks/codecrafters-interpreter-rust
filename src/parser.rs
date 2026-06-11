@@ -377,7 +377,7 @@ impl Parser {
         Ok(body)
     }
 
-    fn block(&mut self) -> Result<Stmt, ParseError> {
+    fn block(&mut self) -> Result<Vec<Stmt>, ParseError> {
         let mut statements = vec![];
 
         while self.peek().token_type != TokenType::RightBrace {
@@ -386,23 +386,69 @@ impl Parser {
 
         self.expect(TokenType::RightBrace, "Expect '}' after block.")?;
 
-        Ok(Stmt::Block(statements))
+        Ok(statements)
+    }
+
+    fn return_statement(&mut self) -> Result<Stmt, ParseError> {
+        let keyword = self.previous().clone();
+        let value = match self.peek().token_type {
+            TokenType::Semicolon => Expr::Literal(LiteralValue::Nil),
+            _ => self.expression()?,
+        };
+        self.expect(TokenType::Semicolon, "Expect ';' after return value.")?;
+
+        Ok(Stmt::Return { keyword, value })
     }
 
     fn statement(&mut self) -> Result<Stmt, ParseError> {
         if self.matches(&[TokenType::Print]) {
             self.print_statement()
         } else if self.matches(&[TokenType::LeftBrace]) {
-            self.block()
+            Ok(Stmt::Block(self.block()?))
         } else if self.matches(&[TokenType::If]) {
             self.if_statement()
         } else if self.matches(&[TokenType::While]) {
             self.while_statement()
         } else if self.matches(&[TokenType::For]) {
             self.for_statement()
+        } else if self.matches(&[TokenType::Return]) {
+            self.return_statement()
         } else {
             self.expression_statement()
         }
+    }
+
+    fn function(&mut self, kind: &str) -> Result<Stmt, ParseError> {
+        let name = self.expect(TokenType::Identifier, &format!("Expect {} name.", kind))?;
+        self.expect(
+            TokenType::LeftParen,
+            &format!("Expect '(' after {} name.", kind),
+        )?;
+        let mut parameters = vec![];
+        if self.peek().token_type != TokenType::RightParen {
+            parameters.push(self.expect(TokenType::Identifier, "Expect parameter name.")?);
+            while self.matches(&[TokenType::Comma]) {
+                if parameters.len() >= 255 {
+                    return Err(ParseError {
+                        token: self.peek().clone(),
+                        message: "Can't have more than 255 parameters.".to_string(),
+                    });
+                }
+                parameters.push(self.expect(TokenType::Identifier, "Expect parameter name.")?);
+            }
+        }
+        self.expect(TokenType::RightParen, "Expect ')' after parameters.")?;
+
+        self.expect(
+            TokenType::LeftBrace,
+            &format!("Expect '{{' before {} body.", kind),
+        )?;
+        let body = self.block()?;
+        Ok(Stmt::Function {
+            name,
+            parameters,
+            body,
+        })
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
@@ -427,6 +473,8 @@ impl Parser {
     fn declaration(&mut self) -> Result<Stmt, ParseError> {
         if self.matches(&[TokenType::Var]) {
             self.var_declaration()
+        } else if self.matches(&[TokenType::Fun]) {
+            self.function("function")
         } else {
             self.statement()
         }

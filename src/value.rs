@@ -1,12 +1,33 @@
-use crate::{ast::LiteralValue, interpreter::Interpreter};
+use std::{cell::RefCell, rc::Rc};
+
+use crate::{
+    ast::{LiteralValue, Stmt},
+    environment::Environment,
+    interpreter::Interpreter,
+    token::Token,
+};
 
 pub(crate) struct RuntimeError {
     pub(crate) message: String,
 }
 
+pub(crate) enum ExecutionError {
+    RuntimeError(RuntimeError),
+    Return(LoxValue),
+}
+
+impl From<RuntimeError> for ExecutionError {
+    fn from(value: RuntimeError) -> Self {
+        Self::RuntimeError(value)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct LoxFunction {
-    arity: usize,
+    pub(crate) name: Token,
+    pub(crate) parameters: Vec<Token>,
+    pub(crate) body: Vec<Stmt>,
+    pub(crate) closure: Rc<RefCell<Environment>>,
 }
 
 impl LoxFunction {
@@ -15,13 +36,27 @@ impl LoxFunction {
         interpreter: &mut Interpreter,
         args: Vec<LoxValue>,
     ) -> Result<LoxValue, RuntimeError> {
-        if args.len() != self.arity {
+        if args.len() != self.parameters.len() {
             return Err(RuntimeError {
-                message: format!("Expected {} arguments but got {}.", self.arity, args.len()),
+                message: format!(
+                    "Expected {} arguments but got {}.",
+                    self.parameters.len(),
+                    args.len()
+                ),
             });
         }
 
-        todo!()
+        let mut environment = Environment::new_with_parent(self.closure.clone());
+
+        for i in 0..args.len() {
+            environment.define(self.parameters[i].lexeme.clone(), args[i].clone());
+        }
+
+        match interpreter.execute_block(&self.body, Rc::new(RefCell::new(environment))) {
+            Ok(_) => Ok(LoxValue::Nil),
+            Err(ExecutionError::Return(ret)) => Ok(ret),
+            Err(ExecutionError::RuntimeError(err)) => return Err(err),
+        }
     }
 }
 
@@ -89,7 +124,9 @@ impl LoxValue {
             LoxValue::Str(s) => s.to_string(),
             LoxValue::Bool(b) => b.to_string(),
             LoxValue::Nil => String::from("nil"),
-            LoxValue::Function(lox_function) => format!("<function {}>", lox_function.arity),
+            LoxValue::Function(lox_function) => {
+                format!("<function {}>", lox_function.parameters.len())
+            }
             LoxValue::Class(lox_class) => format!("<class '{}'>", lox_class.arity),
             LoxValue::NativeFunction { name, arity, func } => {
                 format!("<built-in function {}>", name)

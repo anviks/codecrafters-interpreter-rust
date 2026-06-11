@@ -1,10 +1,11 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
-    value::{LoxValue, RuntimeError},
     token::Token,
+    value::{LoxValue, RuntimeError},
 };
 
+#[derive(Debug)]
 pub(crate) struct Environment {
     variables: HashMap<String, LoxValue>,
     parent: Option<Rc<RefCell<Environment>>>,
