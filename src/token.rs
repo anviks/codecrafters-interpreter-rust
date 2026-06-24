@@ -67,12 +67,20 @@ impl fmt::Display for TokenType {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+pub(crate) struct Span {
+    pub(crate) line_start: u32,
+    pub(crate) col_start: u32,
+    pub(crate) line_end: u32,
+    pub(crate) col_end: u32,
+}
+
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub(crate) struct Token {
     pub(crate) token_type: TokenType,
     pub(crate) lexeme: String,
     pub(crate) literal: Option<String>,
-    pub(crate) line: u32,
+    pub(crate) span: Span,
 }
 
 impl fmt::Display for Token {

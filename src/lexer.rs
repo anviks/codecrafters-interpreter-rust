@@ -1,6 +1,6 @@
 use crate::{
     helpers::format_float,
-    token::{Token, TokenType},
+    token::{Span, Token, TokenType},
 };
 
 fn get_token_type_for_identifier(identifier: &str) -> TokenType {
@@ -29,6 +29,9 @@ pub struct Lexer {
     pub source: Vec<char>,
     pub current: usize,
     pub line: u32,
+    pub column: u32,
+    tok_start_line: u32,
+    tok_start_col: u32,
     pub encountered_error: bool,
 }
 
@@ -38,6 +41,9 @@ impl Lexer {
             source: source.chars().collect(),
             current: 0,
             line: 1,
+            column: 1,
+            tok_start_line: 1,
+            tok_start_col: 1,
             encountered_error: false,
         }
     }
@@ -60,6 +66,12 @@ impl Lexer {
     fn consume(&mut self) -> char {
         let c = self.peek();
         self.current += 1;
+        if c == '\n' {
+            self.line += 1;
+            self.column = 1;
+        } else {
+            self.column += 1;
+        }
         c
     }
 
@@ -67,9 +79,6 @@ impl Lexer {
         let mut s = String::new();
         self.consume();
         while !self.eof() && self.peek() != '"' {
-            if self.peek() == '\n' {
-                self.line += 1
-            }
             s.push(self.consume());
         }
         if self.eof() {
@@ -130,8 +139,6 @@ impl Lexer {
             } else if self.peek() == '*' && self.peek_at(1) == '/' {
                 self.consume();
                 depth -= 1;
-            } else if self.peek() == '\n' {
-                self.line += 1;
             }
 
             self.consume();
@@ -142,12 +149,21 @@ impl Lexer {
         }
     }
 
+    fn current_span(&self) -> Span {
+        Span {
+            line_start: self.tok_start_line,
+            col_start: self.tok_start_col,
+            line_end: self.line,
+            col_end: self.column,
+        }
+    }
+
     fn make_token(&self, token_type: TokenType, lexeme: String) -> Token {
         Token {
             token_type,
             lexeme,
             literal: None,
-            line: self.line,
+            span: self.current_span(),
         }
     }
 
@@ -161,7 +177,7 @@ impl Lexer {
             token_type,
             lexeme,
             literal: Some(literal),
-            line: self.line,
+            span: self.current_span(),
         }
     }
 
@@ -171,6 +187,9 @@ impl Lexer {
         let mut tokens: Vec<Token> = vec![];
 
         while !self.eof() {
+            self.tok_start_line = self.line;
+            self.tok_start_col = self.column;
+
             let double_char = match (self.peek(), self.peek_at(1)) {
                 ('=', '=') => Some(TokenType::EqualEqual),
                 ('!', '=') => Some(TokenType::BangEqual),
@@ -212,7 +231,6 @@ impl Lexer {
                         self.consume();
                     }
                     '\n' => {
-                        self.line += 1;
                         self.consume();
                     }
                     '/' if self.peek_at(1) == '/' => {
@@ -234,10 +252,13 @@ impl Lexer {
             }
         }
 
+        self.tok_start_line = self.line;
+        self.tok_start_col = self.column;
         tokens.push(self.make_token(TokenType::Eof, String::new()));
 
         self.current = 0;
         self.line = 1;
+        self.column = 1;
 
         tokens
     }

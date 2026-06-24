@@ -487,7 +487,7 @@ impl Parser {
             Err(e) => {
                 eprintln!(
                     "[line {}] Error at '{}': Expect expression.",
-                    e.token.line, e.token.lexeme
+                    e.token.span.line_start, e.token.lexeme
                 );
                 self.encountered_error = true;
                 None
