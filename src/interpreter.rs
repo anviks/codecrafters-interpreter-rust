@@ -32,10 +32,6 @@ impl Interpreter {
         }
     }
 
-    pub(crate) fn resolve(&mut self, expr: &Expr, depth: usize) {
-        self.locals.insert(expr.clone(), depth);
-    }
-
     pub(crate) fn look_up_variable(
         &self,
         name: &Token,
@@ -229,14 +225,14 @@ impl Interpreter {
         }
     }
 
-    pub(crate) fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
+    pub(crate) fn interpret(&mut self, statements: &Vec<Stmt>) -> Result<(), RuntimeError> {
         for stmt in statements {
-            match self.execute(&stmt) {
+            match self.execute(stmt) {
                 Ok(()) => (),
                 Err(ExecutionError::RuntimeError(err)) => return Err(err),
                 Err(ExecutionError::Return(_)) => {
                     return Err(RuntimeError {
-                        message: "Cannot return from top-level code.".to_string(),
+                        message: "Can't return from top-level code.".to_string(),
                     });
                 }
             }

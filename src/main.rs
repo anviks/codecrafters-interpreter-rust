@@ -118,17 +118,17 @@ fn main() {
                 exit(65);
             }
 
-            let mut interpreter = Interpreter::new();
-            let mut resolver = Resolver::new(&mut interpreter);
-
             let statements = stmts.unwrap();
-
+            
+            let mut resolver = Resolver::new();
             if let Err(err) = resolver.resolve_statements(&statements) {
                 eprintln!("{}", err.message);
                 exit(65);
             }
-
-            if let Err(e) = interpreter.interpret(statements) {
+            
+            let mut interpreter = Interpreter::new();
+            interpreter.locals = resolver.locals;
+            if let Err(e) = interpreter.interpret(&statements) {
                 eprintln!("{}", e.message);
                 exit(70);
             }

@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    ast::{Expr, Stmt},
-    interpreter::Interpreter,
-};
+use crate::ast::{Expr, Stmt};
 
 #[derive(Clone, Copy)]
 enum FunctionType {
@@ -11,8 +8,8 @@ enum FunctionType {
     Function,
 }
 
-pub(crate) struct Resolver<'a> {
-    interpreter: &'a mut Interpreter,
+pub(crate) struct Resolver {
+    pub(crate) locals: HashMap<Expr, usize>,
     scopes: Vec<HashMap<String, bool>>,
     current_function: FunctionType,
 }
@@ -21,10 +18,10 @@ pub(crate) struct ResolveError {
     pub(crate) message: String,
 }
 
-impl<'a> Resolver<'a> {
-    pub(crate) fn new(interpreter: &'a mut Interpreter) -> Self {
+impl Resolver {
+    pub(crate) fn new() -> Self {
         Resolver {
-            interpreter,
+            locals: HashMap::new(),
             scopes: vec![],
             current_function: FunctionType::None,
         }
@@ -65,7 +62,7 @@ impl<'a> Resolver<'a> {
     fn resolve_local(&mut self, expr: &Expr, name: &str) {
         for (i, scope) in self.scopes.iter().rev().enumerate() {
             if scope.contains_key(name) {
-                self.interpreter.resolve(expr, i);
+                self.locals.insert(expr.clone(), i);
                 return;
             }
         }
