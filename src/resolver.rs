@@ -68,6 +68,7 @@ impl<'a> Resolver<'a> {
         for (i, scope) in self.scopes.iter().rev().enumerate() {
             if scope.contains_key(name) {
                 self.interpreter.resolve(expr, i);
+                return;
             }
         }
     }
