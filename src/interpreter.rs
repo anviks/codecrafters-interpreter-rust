@@ -100,7 +100,7 @@ impl Interpreter {
             Expr::Assign { left, right } => {
                 let value = self.evaluate(right)?;
 
-                match self.locals.get(right) {
+                match self.locals.get(expr) {
                     Some(distance) => Environment::assign_at(
                         self.environment.clone(),
                         *distance,
