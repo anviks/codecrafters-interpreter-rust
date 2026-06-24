@@ -7,10 +7,11 @@ mod parser;
 mod token;
 mod value;
 mod natives;
+mod resolver;
 
 use std::{env, fs, process::exit};
 
-use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
+use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser, resolver::Resolver};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -118,7 +119,15 @@ fn main() {
             }
 
             let mut interpreter = Interpreter::new();
-            match interpreter.interpret(stmts.unwrap()) {
+            let mut resolver = Resolver::new(&mut interpreter);
+
+            let statements = stmts.unwrap();
+            match resolver.resolve_statements(&statements) {
+                Ok(_) => {},
+                Err(_) => return,
+            }
+
+            match interpreter.interpret(statements) {
                 Ok(_) => {}
                 Err(e) => {
                     eprintln!("{}", e.message);

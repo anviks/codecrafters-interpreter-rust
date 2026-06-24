@@ -1,6 +1,6 @@
 use crate::{helpers::format_float, token::Token};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum LiteralValue {
     Number(f64),
     Str(String),
@@ -8,7 +8,15 @@ pub(crate) enum LiteralValue {
     Nil,
 }
 
-#[derive(Debug, Clone)]
+impl Eq for LiteralValue {}
+
+impl std::hash::Hash for LiteralValue {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        core::mem::discriminant(self).hash(state);
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub(crate) enum Expr {
     Unary {
         operator: Token,
@@ -112,9 +120,9 @@ impl Expr {
                 right.to_string()
             ),
             Expr::Call {
-                callee,
-                paren,
-                arguments,
+                callee: _,
+                paren: _,
+                arguments: _,
             } => todo!(),
         }
     }

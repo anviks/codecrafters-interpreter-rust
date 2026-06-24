@@ -1,15 +1,17 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     ast::{Expr, Stmt},
     environment::Environment,
     natives::clock,
-    token::TokenType,
+    token::{Token, TokenType},
     value::{ExecutionError, LoxFunction, LoxValue, RuntimeError},
 };
 
 pub(crate) struct Interpreter {
+    pub(crate) globals: Rc<RefCell<Environment>>,
     pub(crate) environment: Rc<RefCell<Environment>>,
+    pub(crate) locals: HashMap<Expr, usize>,
 }
 
 impl Interpreter {
@@ -22,8 +24,28 @@ impl Interpreter {
         };
         env.define("clock".to_string(), clock_fn);
 
+        let environment = Rc::new(RefCell::new(env));
         Self {
-            environment: Rc::new(RefCell::new(env)),
+            globals: environment.clone(),
+            environment,
+            locals: HashMap::new(),
+        }
+    }
+
+    pub(crate) fn resolve(&mut self, expr: &Expr, depth: usize) {
+        self.locals.insert(expr.clone(), depth);
+    }
+
+    pub(crate) fn look_up_variable(
+        &self,
+        name: &Token,
+        expr: &Expr,
+    ) -> Result<LoxValue, RuntimeError> {
+        match self.locals.get(expr) {
+            Some(distance) => {
+                Environment::get_at(self.environment.clone(), *distance, &name.lexeme)
+            }
+            None => Ok(self.globals.borrow().get(name.clone())?.clone()),
         }
     }
 
@@ -74,12 +96,23 @@ impl Interpreter {
             }
             Expr::Grouping(ex) => Ok(self.evaluate(ex)?),
             Expr::Literal(literal_value) => Ok(literal_value.clone().into()),
-            Expr::Variable(token) => Ok(self.environment.borrow().get(token.clone())?.clone()),
+            Expr::Variable(token) => self.look_up_variable(token, expr),
             Expr::Assign { left, right } => {
                 let value = self.evaluate(right)?;
-                self.environment
-                    .borrow_mut()
-                    .assign(left.clone(), value.clone())?;
+
+                match self.locals.get(right) {
+                    Some(distance) => Environment::assign_at(
+                        self.environment.clone(),
+                        *distance,
+                        &left.lexeme,
+                        value.clone(),
+                    ),
+                    None => self
+                        .globals
+                        .borrow_mut()
+                        .assign(left.clone(), value.clone())?,
+                }
+
                 Ok(value)
             }
             Expr::Logical {
@@ -97,7 +130,7 @@ impl Interpreter {
             }
             Expr::Call {
                 callee,
-                paren,
+                paren: _,
                 arguments,
             } => {
                 let callable = self.evaluate(callee)?;
@@ -192,7 +225,7 @@ impl Interpreter {
                     .define(name.lexeme.clone(), function);
                 Ok(())
             }
-            Stmt::Return { keyword, value } => Err(ExecutionError::Return(self.evaluate(value)?)),
+            Stmt::Return { keyword: _, value } => Err(ExecutionError::Return(self.evaluate(value)?)),
         }
     }
 

@@ -1,8 +1,6 @@
 use std::fmt;
 
-#[derive(Debug)]
-#[derive(PartialEq)]
-#[derive(Clone)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub(crate) enum TokenType {
     LeftParen,
     RightParen,
@@ -69,8 +67,7 @@ impl fmt::Display for TokenType {
     }
 }
 
-#[derive(Clone)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub(crate) struct Token {
     pub(crate) token_type: TokenType,
     pub(crate) lexeme: String,

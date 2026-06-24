@@ -56,4 +56,43 @@ impl Environment {
             },
         }
     }
+
+    pub(crate) fn ancestor(
+        start: Rc<RefCell<Environment>>,
+        distance: usize,
+    ) -> Rc<RefCell<Environment>> {
+        let mut environment = start;
+
+        for _ in 0..distance {
+            let x = environment.borrow().parent.clone().unwrap();
+            environment = x;
+        }
+
+        environment
+    }
+
+    pub(crate) fn get_at(
+        start: Rc<RefCell<Environment>>,
+        distance: usize,
+        name: &str,
+    ) -> Result<LoxValue, RuntimeError> {
+        let env = Environment::ancestor(start, distance);
+        env.borrow()
+            .variables
+            .get(name)
+            .cloned()
+            .ok_or_else(|| RuntimeError {
+                message: format!("Undefined variable '{}'.", name),
+            })
+    }
+
+    pub(crate) fn assign_at(
+        start: Rc<RefCell<Environment>>,
+        distance: usize,
+        name: &str,
+        value: LoxValue,
+    ) {
+        let env = Environment::ancestor(start, distance);
+        env.borrow_mut().variables.insert(name.to_string(), value);
+    }
 }
