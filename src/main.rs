@@ -3,11 +3,11 @@ mod environment;
 mod helpers;
 mod interpreter;
 mod lexer;
+mod natives;
 mod parser;
+mod resolver;
 mod token;
 mod value;
-mod natives;
-mod resolver;
 
 use std::{env, fs, process::exit};
 
@@ -122,17 +122,15 @@ fn main() {
             let mut resolver = Resolver::new(&mut interpreter);
 
             let statements = stmts.unwrap();
+
             if let Err(err) = resolver.resolve_statements(&statements) {
                 eprintln!("{}", err.message);
                 exit(65);
             }
 
-            match interpreter.interpret(statements) {
-                Ok(_) => {}
-                Err(e) => {
-                    eprintln!("{}", e.message);
-                    exit(70);
-                }
+            if let Err(e) = interpreter.interpret(statements) {
+                eprintln!("{}", e.message);
+                exit(70);
             }
         }
         _ => {

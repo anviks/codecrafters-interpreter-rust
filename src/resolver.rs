@@ -39,22 +39,20 @@ impl<'a> Resolver<'a> {
     }
 
     fn declare(&mut self, name: String) -> Result<(), ResolveError> {
-        match self.scopes.last_mut() {
-            Some(map) => match map.insert(name, false) {
-                Some(_) => Err(ResolveError {
-                    message: "Already a variable with this name in this scope.".to_string(),
-                }),
-                None => Ok(()),
-            },
-            None => Ok(()),
+        if let Some(map) = self.scopes.last_mut()
+            && let Some(_) = map.insert(name, false)
+        {
+            return Err(ResolveError {
+                message: "Already a variable with this name in this scope.".to_string(),
+            });
         }
+        Ok(())
     }
 
     fn define(&mut self, name: String) {
-        match self.scopes.last_mut() {
-            Some(map) => map.insert(name, true),
-            None => return,
-        };
+        if let Some(map) = self.scopes.last_mut() {
+            map.insert(name, true);
+        }
     }
 
     pub(crate) fn resolve_statements(&mut self, stmts: &Vec<Stmt>) -> Result<(), ResolveError> {
