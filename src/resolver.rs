@@ -18,7 +18,7 @@ pub(crate) struct Resolver<'a> {
 }
 
 pub(crate) struct ResolveError {
-    message: String,
+    pub(crate) message: String,
 }
 
 impl<'a> Resolver<'a> {

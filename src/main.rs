@@ -122,9 +122,9 @@ fn main() {
             let mut resolver = Resolver::new(&mut interpreter);
 
             let statements = stmts.unwrap();
-            match resolver.resolve_statements(&statements) {
-                Ok(_) => {},
-                Err(_) => return,
+            if let Err(err) = resolver.resolve_statements(&statements) {
+                eprintln!("{}", err.message);
+                exit(65);
             }
 
             match interpreter.interpret(statements) {
