@@ -140,11 +140,11 @@ impl Expr {
                 paren: _,
                 arguments: _,
             } => todo!(),
-            Expr::Get { object, name } => todo!(),
+            Expr::Get { object: _, name: _ } => todo!(),
             Expr::Set {
-                object,
-                name,
-                value,
+                object: _,
+                name: _,
+                value: _,
             } => todo!(),
         }
     }

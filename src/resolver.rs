@@ -189,10 +189,10 @@ impl Resolver {
                 }
                 Ok(())
             }
-            Expr::Get { object, name } => self.resolve_expression(object),
+            Expr::Get { object, name: _ } => self.resolve_expression(object),
             Expr::Set {
                 object,
-                name,
+                name: _,
                 value,
             } => {
                 self.resolve_expression(value)?;

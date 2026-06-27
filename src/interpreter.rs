@@ -250,7 +250,7 @@ impl Interpreter {
             Stmt::Return { keyword: _, value } => {
                 Err(ExecutionError::Return(self.evaluate(value)?))
             }
-            Stmt::Class { name, methods } => {
+            Stmt::Class { name, methods: _ } => {
                 let mut env = self.environment.borrow_mut();
                 env.define(name.lexeme.clone(), LoxValue::Nil);
                 let class = LoxClass {

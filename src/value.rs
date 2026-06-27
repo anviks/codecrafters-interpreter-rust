@@ -69,7 +69,7 @@ pub(crate) struct LoxClass {
 impl LoxClass {
     fn call(
         self: &Rc<LoxClass>,
-        interpreter: &mut Interpreter,
+        _interpreter: &mut Interpreter,
         args: Vec<LoxValue>,
     ) -> Result<LoxValue, RuntimeError> {
         if args.len() != self.arity {
@@ -151,7 +151,7 @@ impl LoxValue {
                 format!("<fn {}>", lox_function.name.lexeme)
             }
             LoxValue::Class(lox_class) => format!("<class '{}'>", lox_class.name),
-            LoxValue::NativeFunction { name, arity, func } => {
+            LoxValue::NativeFunction { name, arity: _, func: _ } => {
                 format!("<built-in function {}>", name)
             }
             LoxValue::Instance(lox_instance) => format!("<{} object>", lox_instance.class.name),
@@ -188,7 +188,7 @@ impl LoxValue {
         match self {
             LoxValue::Function(lox_function) => lox_function.call(interpreter, args),
             LoxValue::Class(lox_class) => lox_class.call(interpreter, args),
-            LoxValue::NativeFunction { name, arity, func } => func(interpreter, args),
+            LoxValue::NativeFunction { name: _, arity: _, func } => func(interpreter, args),
             _ => Err(RuntimeError {
                 message: "Not callable".to_string(),
             }),
