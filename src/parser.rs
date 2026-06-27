@@ -143,6 +143,12 @@ impl Parser {
                     paren,
                     arguments,
                 };
+            } else if self.matches(&[TokenType::Dot]) {
+                let name = self.expect(TokenType::Identifier, "Expect property name after '.'.")?;
+                expr = Expr::Get {
+                    object: Box::new(expr),
+                    name,
+                };
             } else {
                 break;
             }
@@ -268,24 +274,28 @@ impl Parser {
     fn assignment(&mut self) -> Result<Expr, ParseError> {
         let expr = self.or()?;
 
-        if self.matches(&[TokenType::Equal]) {
-            let equals = self.previous().clone();
-            let value = self.assignment()?;
-
-            if let Expr::Variable(token) = expr {
-                return Ok(Expr::Assign {
-                    left: token,
-                    right: Box::new(value),
-                });
-            }
-
-            return Err(ParseError {
-                token: equals,
-                message: "Invalid assignment target.".to_string(),
-            });
+        if !self.matches(&[TokenType::Equal]) {
+            return Ok(expr);
         }
 
-        Ok(expr)
+        let equals = self.previous().clone();
+        let value = self.assignment()?;
+
+        match expr {
+            Expr::Variable(token) => Ok(Expr::Assign {
+                left: token,
+                right: Box::new(value),
+            }),
+            Expr::Get { object, name } => Ok(Expr::Set {
+                object,
+                name,
+                value: Box::new(value),
+            }),
+            _ => Err(ParseError {
+                token: equals,
+                message: "Invalid assignment target.".to_string(),
+            }),
+        }
     }
 
     fn expression(&mut self) -> Result<Expr, ParseError> {

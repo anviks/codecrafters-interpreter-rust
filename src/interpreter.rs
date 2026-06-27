@@ -138,6 +138,32 @@ impl Interpreter {
 
                 callable.call(self, args)
             }
+            Expr::Get { object, name } => {
+                let obj = self.evaluate(object)?;
+                match obj {
+                    LoxValue::Instance(instance) => Ok(instance.get(name)?),
+                    _ => Err(RuntimeError {
+                        message: "Only instances have properties.".to_string(),
+                    }),
+                }
+            }
+            Expr::Set {
+                object,
+                name,
+                value,
+            } => {
+                let obj = self.evaluate(object)?;
+                match obj {
+                    LoxValue::Instance(mut instance) => {
+                        let val = self.evaluate(value)?;
+                        instance.set(name, val.clone());
+                        Ok(val)
+                    }
+                    _ => Err(RuntimeError {
+                        message: "Only instances have fields.".to_string(),
+                    }),
+                }
+            }
         }
     }
 

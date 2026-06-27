@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     ast::{LiteralValue, Stmt},
@@ -80,6 +80,7 @@ impl LoxClass {
 
         Ok(LoxValue::Instance(LoxInstance {
             class: self.clone(),
+            fields: HashMap::new(),
         }))
     }
 }
@@ -87,6 +88,19 @@ impl LoxClass {
 #[derive(Debug, Clone)]
 pub(crate) struct LoxInstance {
     pub(crate) class: Rc<LoxClass>,
+    pub(crate) fields: HashMap<String, LoxValue>,
+}
+
+impl LoxInstance {
+    pub(crate) fn get(&self, name: &Token) -> Result<LoxValue, RuntimeError> {
+        self.fields.get(&name.lexeme).cloned().ok_or(RuntimeError {
+            message: format!("Undefined property '{}'.", name.lexeme),
+        })
+    }
+    
+    pub(crate) fn set(&mut self, name: &Token, val: LoxValue) {
+        self.fields.insert(name.lexeme.clone(), val);
+    }
 }
 
 #[derive(Debug, Clone)]

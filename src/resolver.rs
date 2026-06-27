@@ -138,7 +138,7 @@ impl Resolver {
                 self.declare(name.lexeme.clone())?;
                 self.define(name.lexeme.clone());
                 Ok(())
-            },
+            }
         }
     }
 
@@ -188,6 +188,15 @@ impl Resolver {
                     self.resolve_expression(arg)?;
                 }
                 Ok(())
+            }
+            Expr::Get { object, name } => self.resolve_expression(object),
+            Expr::Set {
+                object,
+                name,
+                value,
+            } => {
+                self.resolve_expression(value)?;
+                self.resolve_expression(object)
             }
         }
     }

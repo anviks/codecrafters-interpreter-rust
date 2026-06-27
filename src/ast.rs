@@ -44,6 +44,15 @@ pub(crate) enum Expr {
         paren: Token,
         arguments: Vec<Expr>,
     },
+    Get {
+        object: Box<Expr>,
+        name: Token,
+    },
+    Set {
+        object: Box<Expr>,
+        name: Token,
+        value: Box<Expr>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -130,6 +139,12 @@ impl Expr {
                 callee: _,
                 paren: _,
                 arguments: _,
+            } => todo!(),
+            Expr::Get { object, name } => todo!(),
+            Expr::Set {
+                object,
+                name,
+                value,
             } => todo!(),
         }
     }
