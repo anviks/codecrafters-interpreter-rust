@@ -73,7 +73,7 @@ impl Interpreter {
                             Ok(LoxValue::Number(l_num + r_num))
                         }
                         (LoxValue::Str(l_str), LoxValue::Str(r_str)) => {
-                            Ok(LoxValue::Str(l_str + r_str.as_str()))
+                            Ok(LoxValue::Str(l_str + &r_str))
                         }
                         _ => Err(RuntimeError {
                             message: "Operands must be two numbers or two strings.".to_string(),
@@ -141,7 +141,7 @@ impl Interpreter {
             Expr::Get { object, name } => {
                 let obj = self.evaluate(object)?;
                 match obj {
-                    LoxValue::Instance(instance) => Ok(instance.get(name)?),
+                    LoxValue::Instance(instance) => Ok(instance.borrow().get(name)?),
                     _ => Err(RuntimeError {
                         message: "Only instances have properties.".to_string(),
                     }),
@@ -154,9 +154,9 @@ impl Interpreter {
             } => {
                 let obj = self.evaluate(object)?;
                 match obj {
-                    LoxValue::Instance(mut instance) => {
+                    LoxValue::Instance(instance) => {
                         let val = self.evaluate(value)?;
-                        instance.set(name, val.clone());
+                        instance.borrow_mut().set(name, val.clone());
                         Ok(val)
                     }
                     _ => Err(RuntimeError {

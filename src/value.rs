@@ -78,10 +78,11 @@ impl LoxClass {
             });
         }
 
-        Ok(LoxValue::Instance(LoxInstance {
+        let instance = LoxInstance {
             class: self.clone(),
             fields: HashMap::new(),
-        }))
+        };
+        Ok(LoxValue::Instance(Rc::new(RefCell::new(instance))))
     }
 }
 
@@ -97,7 +98,7 @@ impl LoxInstance {
             message: format!("Undefined property '{}'.", name.lexeme),
         })
     }
-    
+
     pub(crate) fn set(&mut self, name: &Token, val: LoxValue) {
         self.fields.insert(name.lexeme.clone(), val);
     }
@@ -116,7 +117,7 @@ pub(crate) enum LoxValue {
         func: fn(&mut Interpreter, Vec<LoxValue>) -> Result<LoxValue, RuntimeError>,
     },
     Class(Rc<LoxClass>),
-    Instance(LoxInstance),
+    Instance(Rc<RefCell<LoxInstance>>),
 }
 
 impl From<LiteralValue> for LoxValue {
@@ -151,10 +152,16 @@ impl LoxValue {
                 format!("<fn {}>", lox_function.name.lexeme)
             }
             LoxValue::Class(lox_class) => format!("<class '{}'>", lox_class.name),
-            LoxValue::NativeFunction { name, arity: _, func: _ } => {
+            LoxValue::NativeFunction {
+                name,
+                arity: _,
+                func: _,
+            } => {
                 format!("<built-in function {}>", name)
             }
-            LoxValue::Instance(lox_instance) => format!("<{} object>", lox_instance.class.name),
+            LoxValue::Instance(lox_instance) => {
+                format!("<{} object>", lox_instance.borrow().class.name)
+            }
         }
     }
 
@@ -188,7 +195,11 @@ impl LoxValue {
         match self {
             LoxValue::Function(lox_function) => lox_function.call(interpreter, args),
             LoxValue::Class(lox_class) => lox_class.call(interpreter, args),
-            LoxValue::NativeFunction { name: _, arity: _, func } => func(interpreter, args),
+            LoxValue::NativeFunction {
+                name: _,
+                arity: _,
+                func,
+            } => func(interpreter, args),
             _ => Err(RuntimeError {
                 message: "Not callable".to_string(),
             }),
