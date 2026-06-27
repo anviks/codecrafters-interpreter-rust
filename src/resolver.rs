@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::{Expr, Stmt};
+use crate::ast::{Expr, FunctionDecl, Stmt};
 
 #[derive(Clone, Copy)]
 enum FunctionType {
@@ -105,11 +105,11 @@ impl Resolver {
                 self.resolve_expression(condition)?;
                 self.resolve_statement(body)
             }
-            Stmt::Function {
+            Stmt::Function(FunctionDecl {
                 name,
                 parameters,
                 body,
-            } => {
+            }) => {
                 self.declare(name.lexeme.clone())?;
                 self.define(name.lexeme.clone());
 
@@ -133,6 +133,11 @@ impl Resolver {
                     message: "Can't return from top-level code.".to_string(),
                 }),
                 FunctionType::Function => self.resolve_expression(value),
+            },
+            Stmt::Class { name, methods: _ } => {
+                self.declare(name.lexeme.clone())?;
+                self.define(name.lexeme.clone());
+                Ok(())
             },
         }
     }

@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expr, LiteralValue, Stmt},
+    ast::{Expr, FunctionDecl, LiteralValue, Stmt},
     token::{Token, TokenType},
 };
 
@@ -418,7 +418,7 @@ impl Parser {
         }
     }
 
-    fn function(&mut self, kind: &str) -> Result<Stmt, ParseError> {
+    fn function(&mut self, kind: &str) -> Result<FunctionDecl, ParseError> {
         let name = self.expect(TokenType::Identifier, &format!("Expect {} name.", kind))?;
         self.expect(
             TokenType::LeftParen,
@@ -444,7 +444,7 @@ impl Parser {
             &format!("Expect '{{' before {} body.", kind),
         )?;
         let body = self.block()?;
-        Ok(Stmt::Function {
+        Ok(FunctionDecl {
             name,
             parameters,
             body,
@@ -470,11 +470,27 @@ impl Parser {
         })
     }
 
+    fn class_declaration(&mut self) -> Result<Stmt, ParseError> {
+        let name = self.expect(TokenType::Identifier, "Expect class name.")?;
+        self.expect(TokenType::LeftBrace, "Expect '{' before class body")?;
+
+        let mut methods = vec![];
+        while self.peek().token_type != TokenType::RightBrace && !self.is_at_end() {
+            methods.push(self.function("method")?);
+        }
+
+        self.expect(TokenType::RightBrace, "Expect '}' after class body.")?;
+
+        Ok(Stmt::Class { name, methods })
+    }
+
     fn declaration(&mut self) -> Result<Stmt, ParseError> {
         if self.matches(&[TokenType::Var]) {
             self.var_declaration()
         } else if self.matches(&[TokenType::Fun]) {
-            self.function("function")
+            Ok(Stmt::Function(self.function("function")?))
+        } else if self.matches(&[TokenType::Class]) {
+            self.class_declaration()
         } else {
             self.statement()
         }

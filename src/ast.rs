@@ -47,6 +47,13 @@ pub(crate) enum Expr {
 }
 
 #[derive(Debug, Clone)]
+pub(crate) struct FunctionDecl {
+    pub(crate) name: Token,
+    pub(crate) parameters: Vec<Token>,
+    pub(crate) body: Vec<Stmt>,
+}
+
+#[derive(Debug, Clone)]
 pub(crate) enum Stmt {
     Expression(Expr),
     Print(Expr),
@@ -64,14 +71,14 @@ pub(crate) enum Stmt {
         condition: Expr,
         body: Box<Stmt>,
     },
-    Function {
-        name: Token,
-        parameters: Vec<Token>,
-        body: Vec<Stmt>,
-    },
+    Function(FunctionDecl),
     Return {
         keyword: Token,
         value: Expr,
+    },
+    Class {
+        name: Token,
+        methods: Vec<FunctionDecl>,
     },
 }
 

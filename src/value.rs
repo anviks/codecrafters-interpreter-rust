@@ -62,12 +62,13 @@ impl LoxFunction {
 
 #[derive(Debug, Clone)]
 pub(crate) struct LoxClass {
-    arity: usize,
+    pub(crate) arity: usize,
+    pub(crate) name: String,
 }
 
 impl LoxClass {
     fn call(
-        &self,
+        self: &Rc<LoxClass>,
         interpreter: &mut Interpreter,
         args: Vec<LoxValue>,
     ) -> Result<LoxValue, RuntimeError> {
@@ -77,8 +78,15 @@ impl LoxClass {
             });
         }
 
-        todo!()
+        Ok(LoxValue::Instance(LoxInstance {
+            class: self.clone(),
+        }))
     }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct LoxInstance {
+    pub(crate) class: Rc<LoxClass>,
 }
 
 #[derive(Debug, Clone)]
@@ -93,7 +101,8 @@ pub(crate) enum LoxValue {
         arity: usize,
         func: fn(&mut Interpreter, Vec<LoxValue>) -> Result<LoxValue, RuntimeError>,
     },
-    Class(LoxClass),
+    Class(Rc<LoxClass>),
+    Instance(LoxInstance),
 }
 
 impl From<LiteralValue> for LoxValue {
@@ -127,10 +136,11 @@ impl LoxValue {
             LoxValue::Function(lox_function) => {
                 format!("<fn {}>", lox_function.name.lexeme)
             }
-            LoxValue::Class(lox_class) => format!("<class '{}'>", lox_class.arity),
+            LoxValue::Class(lox_class) => format!("<class '{}'>", lox_class.name),
             LoxValue::NativeFunction { name, arity, func } => {
                 format!("<built-in function {}>", name)
             }
+            LoxValue::Instance(lox_instance) => format!("<{} object>", lox_instance.class.name),
         }
     }
 

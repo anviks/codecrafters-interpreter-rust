@@ -1,11 +1,11 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
-    ast::{Expr, Stmt},
+    ast::{Expr, FunctionDecl, Stmt},
     environment::Environment,
     natives::clock,
     token::{Token, TokenType},
-    value::{ExecutionError, LoxFunction, LoxValue, RuntimeError},
+    value::{ExecutionError, LoxClass, LoxFunction, LoxValue, RuntimeError},
 };
 
 pub(crate) struct Interpreter {
@@ -205,11 +205,11 @@ impl Interpreter {
                 }
                 Ok(())
             }
-            Stmt::Function {
+            Stmt::Function(FunctionDecl {
                 name,
                 parameters,
                 body,
-            } => {
+            }) => {
                 let function = LoxValue::Function(LoxFunction {
                     name: name.clone(),
                     parameters: parameters.clone(),
@@ -221,7 +221,19 @@ impl Interpreter {
                     .define(name.lexeme.clone(), function);
                 Ok(())
             }
-            Stmt::Return { keyword: _, value } => Err(ExecutionError::Return(self.evaluate(value)?)),
+            Stmt::Return { keyword: _, value } => {
+                Err(ExecutionError::Return(self.evaluate(value)?))
+            }
+            Stmt::Class { name, methods } => {
+                let mut env = self.environment.borrow_mut();
+                env.define(name.lexeme.clone(), LoxValue::Nil);
+                let class = LoxClass {
+                    arity: 0,
+                    name: name.lexeme.clone(),
+                };
+                env.assign(name.clone(), LoxValue::Class(Rc::new(class)))?;
+                Ok(())
+            }
         }
     }
 
