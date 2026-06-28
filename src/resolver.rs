@@ -6,6 +6,7 @@ use crate::ast::{Expr, FunctionDecl, Stmt};
 enum FunctionType {
     None,
     Function,
+    Method,
 }
 
 pub(crate) struct Resolver {
@@ -68,6 +69,27 @@ impl Resolver {
         }
     }
 
+    fn resolve_function(
+        &mut self,
+        func: &FunctionDecl,
+        func_type: FunctionType,
+    ) -> Result<(), ResolveError> {
+        let enclosing_func = self.current_function;
+        self.current_function = func_type;
+        self.begin_scope();
+
+        for param in &func.parameters {
+            self.declare(param.lexeme.clone())?;
+            self.define(param.lexeme.clone());
+        }
+        self.resolve_statements(&func.body)?;
+
+        self.end_scope();
+        self.current_function = enclosing_func;
+
+        Ok(())
+    }
+
     fn resolve_statement(&mut self, stmt: &Stmt) -> Result<(), ResolveError> {
         match stmt {
             Stmt::Expression(expr) => self.resolve_expression(expr),
@@ -105,38 +127,26 @@ impl Resolver {
                 self.resolve_expression(condition)?;
                 self.resolve_statement(body)
             }
-            Stmt::Function(FunctionDecl {
-                name,
-                parameters,
-                body,
-            }) => {
-                self.declare(name.lexeme.clone())?;
-                self.define(name.lexeme.clone());
-
-                let enclosing_func = self.current_function;
-                self.current_function = FunctionType::Function;
-
-                self.begin_scope();
-                for param in parameters {
-                    self.declare(param.lexeme.clone())?;
-                    self.define(param.lexeme.clone());
-                }
-                self.resolve_statements(body)?;
-                self.end_scope();
-
-                self.current_function = enclosing_func;
-
+            Stmt::Function(func) => {
+                self.declare(func.name.lexeme.clone())?;
+                self.define(func.name.lexeme.clone());
+                self.resolve_function(func, FunctionType::Function)?;
                 Ok(())
             }
             Stmt::Return { keyword: _, value } => match self.current_function {
                 FunctionType::None => Err(ResolveError {
                     message: "Can't return from top-level code.".to_string(),
                 }),
-                FunctionType::Function => self.resolve_expression(value),
+                _ => self.resolve_expression(value),
             },
-            Stmt::Class { name, methods: _ } => {
+            Stmt::Class { name, methods } => {
                 self.declare(name.lexeme.clone())?;
                 self.define(name.lexeme.clone());
+
+                for method in methods {
+                    self.resolve_function(method, FunctionType::Method)?;
+                }
+
                 Ok(())
             }
         }

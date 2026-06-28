@@ -64,6 +64,7 @@ impl LoxFunction {
 pub(crate) struct LoxClass {
     pub(crate) arity: usize,
     pub(crate) name: String,
+    pub(crate) methods: HashMap<String, LoxFunction>,
 }
 
 impl LoxClass {
@@ -84,6 +85,10 @@ impl LoxClass {
         };
         Ok(LoxValue::Instance(Rc::new(RefCell::new(instance))))
     }
+
+    pub(crate) fn find_method(self: &Rc<LoxClass>, name: &str) -> Option<&LoxFunction> {
+        self.methods.get(name)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -94,9 +99,17 @@ pub(crate) struct LoxInstance {
 
 impl LoxInstance {
     pub(crate) fn get(&self, name: &Token) -> Result<LoxValue, RuntimeError> {
-        self.fields.get(&name.lexeme).cloned().ok_or(RuntimeError {
-            message: format!("Undefined property '{}'.", name.lexeme),
-        })
+        self.fields
+            .get(&name.lexeme)
+            .cloned()
+            .or_else(|| {
+                self.class
+                    .find_method(&name.lexeme)
+                    .map(|m| LoxValue::Function(m.clone()))
+            })
+            .ok_or(RuntimeError {
+                message: format!("Undefined property '{}'.", name.lexeme),
+            })
     }
 
     pub(crate) fn set(&mut self, name: &Token, val: LoxValue) {

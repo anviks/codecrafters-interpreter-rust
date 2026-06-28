@@ -250,13 +250,27 @@ impl Interpreter {
             Stmt::Return { keyword: _, value } => {
                 Err(ExecutionError::Return(self.evaluate(value)?))
             }
-            Stmt::Class { name, methods: _ } => {
+            Stmt::Class { name, methods } => {
                 let mut env = self.environment.borrow_mut();
                 env.define(name.lexeme.clone(), LoxValue::Nil);
+
+                let mut meths = HashMap::new();
+                for method in methods {
+                    let function = LoxFunction {
+                        name: method.name.clone(),
+                        parameters: method.parameters.clone(),
+                        body: method.body.clone(),
+                        closure: self.environment.clone(),
+                    };
+                    meths.insert(method.name.lexeme.clone(), function);
+                }
+
                 let class = LoxClass {
                     arity: 0,
                     name: name.lexeme.clone(),
+                    methods: meths,
                 };
+
                 env.assign(name.clone(), LoxValue::Class(Rc::new(class)))?;
                 Ok(())
             }
