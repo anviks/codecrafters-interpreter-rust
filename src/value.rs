@@ -209,7 +209,7 @@ impl LoxValue {
                 format!("<built-in function {}>", name)
             }
             LoxValue::Instance(lox_instance) => {
-                format!("<{} object>", lox_instance.borrow().class.name)
+                format!("{} instance", lox_instance.borrow().class.name)
             }
         }
     }
