@@ -109,6 +109,7 @@ impl Parser {
                 self.expect(TokenType::RightParen, "Expected ')' after expression.")?;
                 Ok(Expr::Grouping(Box::new(expr)))
             }
+            TokenType::This => Ok(Expr::This(self.previous().clone())),
             TokenType::Identifier => Ok(Expr::Variable(self.previous().clone())),
             _ => Err(ParseError {
                 token: self.previous().clone(),

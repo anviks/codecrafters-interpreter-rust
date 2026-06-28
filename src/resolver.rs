@@ -9,10 +9,17 @@ enum FunctionType {
     Method,
 }
 
+#[derive(Clone, Copy)]
+enum ClassType {
+    None,
+    Class,
+}
+
 pub(crate) struct Resolver {
     pub(crate) locals: HashMap<Expr, usize>,
     scopes: Vec<HashMap<String, bool>>,
     current_function: FunctionType,
+    current_class: ClassType,
 }
 
 pub(crate) struct ResolveError {
@@ -25,6 +32,7 @@ impl Resolver {
             locals: HashMap::new(),
             scopes: vec![],
             current_function: FunctionType::None,
+            current_class: ClassType::None,
         }
     }
 
@@ -140,12 +148,25 @@ impl Resolver {
                 _ => self.resolve_expression(value),
             },
             Stmt::Class { name, methods } => {
+                let enclosing_class = self.current_class;
+                self.current_class = ClassType::Class;
+
                 self.declare(name.lexeme.clone())?;
                 self.define(name.lexeme.clone());
+
+                self.begin_scope();
+                self.scopes
+                    .last_mut()
+                    .unwrap()
+                    .insert("this".to_string(), true);
 
                 for method in methods {
                     self.resolve_function(method, FunctionType::Method)?;
                 }
+
+                self.end_scope();
+
+                self.current_class = enclosing_class;
 
                 Ok(())
             }
@@ -208,6 +229,12 @@ impl Resolver {
                 self.resolve_expression(value)?;
                 self.resolve_expression(object)
             }
+            Expr::This(token) => match self.current_class {
+                ClassType::Class => Ok(self.resolve_local(expr, &token.lexeme)),
+                ClassType::None => Err(ResolveError {
+                    message: "Can't use 'this' outside of a class.".to_string(),
+                }),
+            },
         }
     }
 }

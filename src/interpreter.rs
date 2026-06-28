@@ -5,7 +5,7 @@ use crate::{
     environment::Environment,
     natives::clock,
     token::{Token, TokenType},
-    value::{ExecutionError, LoxClass, LoxFunction, LoxValue, RuntimeError},
+    value::{ExecutionError, LoxClass, LoxFunction, LoxInstance, LoxValue, RuntimeError},
 };
 
 pub(crate) struct Interpreter {
@@ -141,7 +141,7 @@ impl Interpreter {
             Expr::Get { object, name } => {
                 let obj = self.evaluate(object)?;
                 match obj {
-                    LoxValue::Instance(instance) => Ok(instance.borrow().get(name)?),
+                    LoxValue::Instance(instance) => Ok(LoxInstance::get(&instance, name)?),
                     _ => Err(RuntimeError {
                         message: "Only instances have properties.".to_string(),
                     }),
@@ -164,6 +164,7 @@ impl Interpreter {
                     }),
                 }
             }
+            Expr::This(token) => self.look_up_variable(token, expr),
         }
     }
 

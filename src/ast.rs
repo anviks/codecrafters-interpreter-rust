@@ -53,6 +53,7 @@ pub(crate) enum Expr {
         name: Token,
         value: Box<Expr>,
     },
+    This(Token),
 }
 
 #[derive(Debug, Clone)]
@@ -146,6 +147,7 @@ impl Expr {
                 name: _,
                 value: _,
             } => todo!(),
+            Expr::This(token) => todo!(),
         }
     }
 }

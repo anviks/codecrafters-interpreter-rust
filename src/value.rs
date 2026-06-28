@@ -58,6 +58,17 @@ impl LoxFunction {
             Err(ExecutionError::RuntimeError(err)) => return Err(err),
         }
     }
+
+    fn bind(&self, instance: Rc<RefCell<LoxInstance>>) -> Self {
+        let mut environment = Environment::new_with_parent(self.closure.clone());
+        environment.define("this".to_string(), LoxValue::Instance(instance.clone()));
+        LoxFunction {
+            name: self.name.clone(),
+            parameters: self.parameters.clone(),
+            body: self.body.clone(),
+            closure: Rc::new(RefCell::new(environment)),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -98,14 +109,21 @@ pub(crate) struct LoxInstance {
 }
 
 impl LoxInstance {
-    pub(crate) fn get(&self, name: &Token) -> Result<LoxValue, RuntimeError> {
-        self.fields
+    pub(crate) fn get(
+        instance: &Rc<RefCell<LoxInstance>>,
+        name: &Token,
+    ) -> Result<LoxValue, RuntimeError> {
+        instance
+            .borrow()
+            .fields
             .get(&name.lexeme)
             .cloned()
             .or_else(|| {
-                self.class
+                instance
+                    .borrow()
+                    .class
                     .find_method(&name.lexeme)
-                    .map(|m| LoxValue::Function(m.clone()))
+                    .map(|m| LoxValue::Function(m.bind(instance.clone())))
             })
             .ok_or(RuntimeError {
                 message: format!("Undefined property '{}'.", name.lexeme),
