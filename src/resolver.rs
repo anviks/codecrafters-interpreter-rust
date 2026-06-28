@@ -146,10 +146,11 @@ impl Resolver {
                 FunctionType::None => Err(ResolveError {
                     message: "Can't return from top-level code.".to_string(),
                 }),
-                FunctionType::Initializer => Err(ResolveError {
+                FunctionType::Initializer if value.is_some() => Err(ResolveError {
                     message: "Can't return a value from an initializer.".to_string(),
                 }),
-                _ => self.resolve_expression(value),
+                _ if let Some(ex) = value => self.resolve_expression(ex),
+                _ => Ok(()),
             },
             Stmt::Class { name, methods } => {
                 let enclosing_class = self.current_class;

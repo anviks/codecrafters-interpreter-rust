@@ -250,7 +250,11 @@ impl Interpreter {
                 Ok(())
             }
             Stmt::Return { keyword: _, value } => {
-                Err(ExecutionError::Return(self.evaluate(value)?))
+                let return_value = match value {
+                    Some(ex) => self.evaluate(ex)?,
+                    None => LoxValue::Nil,
+                };
+                Err(ExecutionError::Return(return_value))
             }
             Stmt::Class { name, methods } => {
                 let mut env = self.environment.borrow_mut();

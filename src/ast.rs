@@ -84,7 +84,7 @@ pub(crate) enum Stmt {
     Function(FunctionDecl),
     Return {
         keyword: Token,
-        value: Expr,
+        value: Option<Expr>,
     },
     Class {
         name: Token,
@@ -147,7 +147,7 @@ impl Expr {
                 name: _,
                 value: _,
             } => todo!(),
-            Expr::This(token) => todo!(),
+            Expr::This(_token) => todo!(),
         }
     }
 }

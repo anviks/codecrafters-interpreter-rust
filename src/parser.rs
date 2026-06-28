@@ -403,8 +403,8 @@ impl Parser {
     fn return_statement(&mut self) -> Result<Stmt, ParseError> {
         let keyword = self.previous().clone();
         let value = match self.peek().token_type {
-            TokenType::Semicolon => Expr::Literal(LiteralValue::Nil),
-            _ => self.expression()?,
+            TokenType::Semicolon => None,
+            _ => Some(self.expression()?),
         };
         self.expect(TokenType::Semicolon, "Expect ';' after return value.")?;
 
