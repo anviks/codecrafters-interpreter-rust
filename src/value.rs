@@ -28,6 +28,7 @@ pub(crate) struct LoxFunction {
     pub(crate) parameters: Vec<Token>,
     pub(crate) body: Vec<Stmt>,
     pub(crate) closure: Rc<RefCell<Environment>>,
+    pub(crate) is_initializer: bool,
 }
 
 impl LoxFunction {
@@ -53,9 +54,10 @@ impl LoxFunction {
         }
 
         match interpreter.execute_block(&self.body, Rc::new(RefCell::new(environment))) {
+            Err(ExecutionError::RuntimeError(err)) => return Err(err),
+            _ if self.is_initializer => Ok(Environment::get_at(self.closure.clone(), 0, "this")?),
             Ok(_) => Ok(LoxValue::Nil),
             Err(ExecutionError::Return(ret)) => Ok(ret),
-            Err(ExecutionError::RuntimeError(err)) => return Err(err),
         }
     }
 
@@ -67,13 +69,13 @@ impl LoxFunction {
             parameters: self.parameters.clone(),
             body: self.body.clone(),
             closure: Rc::new(RefCell::new(environment)),
+            is_initializer: self.is_initializer,
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct LoxClass {
-    pub(crate) arity: usize,
     pub(crate) name: String,
     pub(crate) methods: HashMap<String, LoxFunction>,
 }
@@ -81,24 +83,40 @@ pub(crate) struct LoxClass {
 impl LoxClass {
     fn call(
         self: &Rc<LoxClass>,
-        _interpreter: &mut Interpreter,
+        interpreter: &mut Interpreter,
         args: Vec<LoxValue>,
     ) -> Result<LoxValue, RuntimeError> {
-        if args.len() != self.arity {
+        if args.len() != self.arity() {
             return Err(RuntimeError {
-                message: format!("Expected {} arguments but got {}.", self.arity, args.len()),
+                message: format!(
+                    "Expected {} arguments but got {}.",
+                    self.arity(),
+                    args.len()
+                ),
             });
         }
 
-        let instance = LoxInstance {
+        let instance = Rc::new(RefCell::new(LoxInstance {
             class: self.clone(),
             fields: HashMap::new(),
-        };
-        Ok(LoxValue::Instance(Rc::new(RefCell::new(instance))))
+        }));
+
+        if let Some(init) = self.find_method("init") {
+            init.bind(instance.clone()).call(interpreter, args)?;
+        }
+
+        Ok(LoxValue::Instance(instance))
     }
 
     pub(crate) fn find_method(self: &Rc<LoxClass>, name: &str) -> Option<&LoxFunction> {
         self.methods.get(name)
+    }
+
+    pub(crate) fn arity(self: &Rc<LoxClass>) -> usize {
+        match self.find_method("init") {
+            Some(init) => init.parameters.len(),
+            None => 0,
+        }
     }
 }
 

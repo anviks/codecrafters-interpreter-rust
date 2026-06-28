@@ -7,6 +7,7 @@ enum FunctionType {
     None,
     Function,
     Method,
+    Initializer,
 }
 
 #[derive(Clone, Copy)]
@@ -145,6 +146,9 @@ impl Resolver {
                 FunctionType::None => Err(ResolveError {
                     message: "Can't return from top-level code.".to_string(),
                 }),
+                FunctionType::Initializer => Err(ResolveError {
+                    message: "Can't return a value from an initializer.".to_string(),
+                }),
                 _ => self.resolve_expression(value),
             },
             Stmt::Class { name, methods } => {
@@ -161,7 +165,11 @@ impl Resolver {
                     .insert("this".to_string(), true);
 
                 for method in methods {
-                    self.resolve_function(method, FunctionType::Method)?;
+                    let func_type = match method.name.lexeme.as_str() {
+                        "init" => FunctionType::Initializer,
+                        _ => FunctionType::Method,
+                    };
+                    self.resolve_function(method, func_type)?;
                 }
 
                 self.end_scope();

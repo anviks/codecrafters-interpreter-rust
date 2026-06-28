@@ -76,8 +76,8 @@ impl Environment {
         distance: usize,
         name: &str,
     ) -> Result<LoxValue, RuntimeError> {
-        let env = Environment::ancestor(start, distance);
-        env.borrow()
+        Environment::ancestor(start, distance)
+            .borrow()
             .variables
             .get(name)
             .cloned()

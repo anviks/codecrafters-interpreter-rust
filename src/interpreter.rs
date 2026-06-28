@@ -242,6 +242,7 @@ impl Interpreter {
                     parameters: parameters.clone(),
                     body: body.clone(),
                     closure: self.environment.clone(),
+                    is_initializer: false,
                 });
                 self.environment
                     .borrow_mut()
@@ -262,12 +263,12 @@ impl Interpreter {
                         parameters: method.parameters.clone(),
                         body: method.body.clone(),
                         closure: self.environment.clone(),
+                        is_initializer: method.name.lexeme == "init",
                     };
                     meths.insert(method.name.lexeme.clone(), function);
                 }
 
                 let class = LoxClass {
-                    arity: 0,
                     name: name.lexeme.clone(),
                     methods: meths,
                 };
