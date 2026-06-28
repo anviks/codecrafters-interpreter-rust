@@ -200,7 +200,7 @@ impl LoxValue {
             LoxValue::Function(lox_function) => {
                 format!("<fn {}>", lox_function.name.lexeme)
             }
-            LoxValue::Class(lox_class) => format!("<class '{}'>", lox_class.name),
+            LoxValue::Class(lox_class) => format!("{}", lox_class.name),
             LoxValue::NativeFunction {
                 name,
                 arity: _,
