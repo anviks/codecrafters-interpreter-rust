@@ -171,6 +171,12 @@ impl Resolver {
                     }
 
                     self.resolve_expression(&Expr::Variable(sup.clone()))?;
+
+                    self.begin_scope();
+                    self.scopes
+                        .last_mut()
+                        .unwrap()
+                        .insert("super".to_string(), true);
                 }
 
                 self.begin_scope();
@@ -188,6 +194,10 @@ impl Resolver {
                 }
 
                 self.end_scope();
+
+                if superclass.is_some() {
+                    self.end_scope();
+                }
 
                 self.current_class = enclosing_class;
 
@@ -258,6 +268,10 @@ impl Resolver {
                     message: "Can't use 'this' outside of a class.".to_string(),
                 }),
             },
+            Expr::Super { keyword, method } => {
+                self.resolve_local(expr, &keyword.lexeme);
+                Ok(())
+            }
         }
     }
 }

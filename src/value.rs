@@ -61,7 +61,7 @@ impl LoxFunction {
         }
     }
 
-    fn bind(&self, instance: Rc<RefCell<LoxInstance>>) -> Self {
+    pub(crate) fn bind(&self, instance: Rc<RefCell<LoxInstance>>) -> Self {
         let mut environment = Environment::new_with_parent(self.closure.clone());
         environment.define("this".to_string(), LoxValue::Instance(instance.clone()));
         LoxFunction {

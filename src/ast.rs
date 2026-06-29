@@ -54,6 +54,10 @@ pub(crate) enum Expr {
         value: Box<Expr>,
     },
     This(Token),
+    Super {
+        keyword: Token,
+        method: Token,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -149,6 +153,7 @@ impl Expr {
                 value: _,
             } => todo!(),
             Expr::This(_token) => todo!(),
+            Expr::Super { keyword: _, method: _method } => todo!(),
         }
     }
 }

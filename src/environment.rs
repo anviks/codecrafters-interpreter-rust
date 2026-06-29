@@ -7,8 +7,8 @@ use crate::{
 
 #[derive(Debug)]
 pub(crate) struct Environment {
-    variables: HashMap<String, LoxValue>,
-    parent: Option<Rc<RefCell<Environment>>>,
+    pub(crate) variables: HashMap<String, LoxValue>,
+    pub(crate) parent: Option<Rc<RefCell<Environment>>>,
 }
 
 impl Environment {

@@ -165,6 +165,29 @@ impl Interpreter {
                 }
             }
             Expr::This(token) => self.look_up_variable(token, expr),
+            Expr::Super { keyword, method } => {
+                let distance = self.locals.get(expr);
+
+                let LoxValue::Class(superclass) =
+                    Environment::get_at(self.environment.clone(), *distance.unwrap(), "super")?
+                else {
+                    panic!("Expected 'super' to be a class")
+                };
+
+                let LoxValue::Instance(object) =
+                    // Little hacky
+                    Environment::get_at(self.environment.clone(), *distance.unwrap() - 1, "this")?
+                else {
+                    panic!("Expected 'this' to be an instance")
+                };
+
+                superclass
+                    .find_method(&method.lexeme)
+                    .map(|fun| LoxValue::Function(fun.bind(object)))
+                    .ok_or_else(|| RuntimeError {
+                        message: format!("Undefined property '{}'.", method.lexeme),
+                    })
+            }
         }
     }
 
@@ -275,8 +298,14 @@ impl Interpreter {
                     None
                 };
 
-                let mut env = self.environment.borrow_mut();
-                env.define(name.lexeme.clone(), LoxValue::Nil);
+                let mut env = self.environment.clone();
+                env.borrow_mut().define(name.lexeme.clone(), LoxValue::Nil);
+
+                if let Some(sup) = &supr {
+                    env = Rc::new(RefCell::new(Environment::new_with_parent(env)));
+                    env.borrow_mut()
+                        .define("super".to_string(), LoxValue::Class(sup.clone()));
+                }
 
                 let mut meths = HashMap::new();
                 for method in methods {
@@ -284,10 +313,15 @@ impl Interpreter {
                         name: method.name.clone(),
                         parameters: method.parameters.clone(),
                         body: method.body.clone(),
-                        closure: self.environment.clone(),
+                        closure: env.clone(),
                         is_initializer: method.name.lexeme == "init",
                     };
                     meths.insert(method.name.lexeme.clone(), function);
+                }
+
+                if supr.is_some() {
+                    let temp_env = env.borrow().parent.clone().unwrap();
+                    env = temp_env;
                 }
 
                 let class = LoxClass {
@@ -296,7 +330,8 @@ impl Interpreter {
                     methods: meths,
                 };
 
-                env.assign(name.clone(), LoxValue::Class(Rc::new(class)))?;
+                env.borrow_mut()
+                    .assign(name.clone(), LoxValue::Class(Rc::new(class)))?;
                 Ok(())
             }
         }

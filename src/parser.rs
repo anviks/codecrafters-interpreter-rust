@@ -110,6 +110,13 @@ impl Parser {
                 Ok(Expr::Grouping(Box::new(expr)))
             }
             TokenType::This => Ok(Expr::This(self.previous().clone())),
+            TokenType::Super => {
+                let keyword = self.previous().clone();
+                self.expect(TokenType::Dot, "Expect '.' after 'super'.")?;
+                let method =
+                    self.expect(TokenType::Identifier, "Expect superclass method name.")?;
+                Ok(Expr::Super { keyword, method })
+            }
             TokenType::Identifier => Ok(Expr::Variable(self.previous().clone())),
             _ => Err(ParseError {
                 token: self.previous().clone(),
@@ -500,7 +507,11 @@ impl Parser {
 
         self.expect(TokenType::RightBrace, "Expect '}' after class body.")?;
 
-        Ok(Stmt::Class { name, superclass, methods })
+        Ok(Stmt::Class {
+            name,
+            superclass,
+            methods,
+        })
     }
 
     fn declaration(&mut self) -> Result<Stmt, ParseError> {
