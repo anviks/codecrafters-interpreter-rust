@@ -483,6 +483,14 @@ impl Parser {
 
     fn class_declaration(&mut self) -> Result<Stmt, ParseError> {
         let name = self.expect(TokenType::Identifier, "Expect class name.")?;
+
+        let superclass = if self.matches(&[TokenType::Less]) {
+            self.expect(TokenType::Identifier, "Expect superclass name.")?;
+            Some(self.previous().clone())
+        } else {
+            None
+        };
+
         self.expect(TokenType::LeftBrace, "Expect '{' before class body")?;
 
         let mut methods = vec![];
@@ -492,7 +500,7 @@ impl Parser {
 
         self.expect(TokenType::RightBrace, "Expect '}' after class body.")?;
 
-        Ok(Stmt::Class { name, methods })
+        Ok(Stmt::Class { name, superclass, methods })
     }
 
     fn declaration(&mut self) -> Result<Stmt, ParseError> {

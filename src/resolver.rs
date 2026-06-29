@@ -152,12 +152,26 @@ impl Resolver {
                 _ if let Some(ex) = value => self.resolve_expression(ex),
                 _ => Ok(()),
             },
-            Stmt::Class { name, methods } => {
+            Stmt::Class {
+                name,
+                superclass,
+                methods,
+            } => {
                 let enclosing_class = self.current_class;
                 self.current_class = ClassType::Class;
 
                 self.declare(name.lexeme.clone())?;
                 self.define(name.lexeme.clone());
+
+                if let Some(sup) = superclass {
+                    if name.lexeme == sup.lexeme {
+                        return Err(ResolveError {
+                            message: "A class can't inherit from itself.".to_string(),
+                        });
+                    }
+
+                    self.resolve_expression(&Expr::Variable(sup.clone()))?;
+                }
 
                 self.begin_scope();
                 self.scopes

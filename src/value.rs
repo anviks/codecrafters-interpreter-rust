@@ -77,6 +77,7 @@ impl LoxFunction {
 #[derive(Debug, Clone)]
 pub(crate) struct LoxClass {
     pub(crate) name: String,
+    pub(crate) superclass: Option<Rc<LoxClass>>,
     pub(crate) methods: HashMap<String, LoxFunction>,
 }
 
@@ -109,7 +110,11 @@ impl LoxClass {
     }
 
     pub(crate) fn find_method(self: &Rc<LoxClass>, name: &str) -> Option<&LoxFunction> {
-        self.methods.get(name)
+        self.methods.get(name).or_else(|| {
+            self.superclass
+                .as_ref()
+                .and_then(|class| class.find_method(name))
+        })
     }
 
     pub(crate) fn arity(self: &Rc<LoxClass>) -> usize {

@@ -88,6 +88,7 @@ pub(crate) enum Stmt {
     },
     Class {
         name: Token,
+        superclass: Option<Token>,
         methods: Vec<FunctionDecl>,
     },
 }

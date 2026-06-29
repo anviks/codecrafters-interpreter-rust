@@ -256,7 +256,25 @@ impl Interpreter {
                 };
                 Err(ExecutionError::Return(return_value))
             }
-            Stmt::Class { name, methods } => {
+            Stmt::Class {
+                name,
+                superclass,
+                methods,
+            } => {
+                let supr = if let Some(sup) = superclass {
+                    let value = self.evaluate(&Expr::Variable(sup.clone()))?;
+                    match value {
+                        LoxValue::Class(lox_class) => Some(lox_class),
+                        _ => {
+                            return Err(ExecutionError::RuntimeError(RuntimeError {
+                                message: "Superclass must be a class".to_string(),
+                            }));
+                        }
+                    }
+                } else {
+                    None
+                };
+
                 let mut env = self.environment.borrow_mut();
                 env.define(name.lexeme.clone(), LoxValue::Nil);
 
@@ -274,6 +292,7 @@ impl Interpreter {
 
                 let class = LoxClass {
                     name: name.lexeme.clone(),
+                    superclass: supr,
                     methods: meths,
                 };
 
