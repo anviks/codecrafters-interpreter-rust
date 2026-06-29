@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     ast::{Expr, FunctionDecl, Stmt},
-    environment::Environment,
+    environment::{Environment, EnvironmentExt},
     natives::clock,
     token::{Token, TokenType},
     value::{ExecutionError, LoxClass, LoxFunction, LoxInstance, LoxValue, RuntimeError},
@@ -232,10 +232,7 @@ impl Interpreter {
                     .borrow_mut()
                     .define(identifier.to_string(), LoxValue::Nil)),
             },
-            Stmt::Block(stmts) => {
-                let child = Environment::new_with_parent(self.environment.clone());
-                self.execute_block(stmts, Rc::new(RefCell::new(child)))
-            }
+            Stmt::Block(stmts) => self.execute_block(stmts, self.environment.child()),
             Stmt::If {
                 condition,
                 then_branch,
@@ -302,7 +299,7 @@ impl Interpreter {
                 env.borrow_mut().define(name.lexeme.clone(), LoxValue::Nil);
 
                 if let Some(sup) = &supr {
-                    env = Rc::new(RefCell::new(Environment::new_with_parent(env)));
+                    env = env.child();
                     env.borrow_mut()
                         .define("super".to_string(), LoxValue::Class(sup.clone()));
                 }

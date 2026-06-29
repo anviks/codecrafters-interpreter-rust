@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     ast::{LiteralValue, Stmt},
-    environment::Environment,
+    environment::{Environment, EnvironmentExt},
     interpreter::Interpreter,
     token::Token,
 };
@@ -47,13 +47,15 @@ impl LoxFunction {
             });
         }
 
-        let mut environment = Environment::new_with_parent(self.closure.clone());
+        let environment = self.closure.child();
 
         for i in 0..args.len() {
-            environment.define(self.parameters[i].lexeme.clone(), args[i].clone());
+            environment
+                .borrow_mut()
+                .define(self.parameters[i].lexeme.clone(), args[i].clone());
         }
 
-        match interpreter.execute_block(&self.body, Rc::new(RefCell::new(environment))) {
+        match interpreter.execute_block(&self.body, environment) {
             Err(ExecutionError::RuntimeError(err)) => return Err(err),
             _ if self.is_initializer => Environment::get_at(self.closure.clone(), 0, "this"),
             Ok(_) => Ok(LoxValue::Nil),
@@ -62,13 +64,15 @@ impl LoxFunction {
     }
 
     pub(crate) fn bind(&self, instance: Rc<RefCell<LoxInstance>>) -> Self {
-        let mut environment = Environment::new_with_parent(self.closure.clone());
-        environment.define("this".to_string(), LoxValue::Instance(instance.clone()));
+        let environment = self.closure.child();
+        environment
+            .borrow_mut()
+            .define("this".to_string(), LoxValue::Instance(instance.clone()));
         LoxFunction {
             name: self.name.clone(),
             parameters: self.parameters.clone(),
             body: self.body.clone(),
-            closure: Rc::new(RefCell::new(environment)),
+            closure: environment,
             is_initializer: self.is_initializer,
         }
     }

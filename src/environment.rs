@@ -11,18 +11,27 @@ pub(crate) struct Environment {
     pub(crate) parent: Option<Rc<RefCell<Environment>>>,
 }
 
+pub(crate) trait EnvironmentExt {
+    fn child(&self) -> Rc<RefCell<Environment>>;
+}
+
+impl EnvironmentExt for Rc<RefCell<Environment>> {
+    fn child(&self) -> Rc<RefCell<Environment>> {
+        Rc::new(RefCell::new({
+            let parent = self.clone();
+            Environment {
+                variables: HashMap::new(),
+                parent: Some(parent),
+            }
+        }))
+    }
+}
+
 impl Environment {
     pub(crate) fn new() -> Self {
         Self {
             variables: HashMap::new(),
             parent: None,
-        }
-    }
-
-    pub(crate) fn new_with_parent(parent: Rc<RefCell<Environment>>) -> Self {
-        Self {
-            variables: HashMap::new(),
-            parent: Some(parent),
         }
     }
 
