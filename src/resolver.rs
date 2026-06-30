@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::ast::{Expr, FunctionDecl, Stmt};
+use crate::{
+    ast::{Expr, FunctionDecl, Stmt},
+    token::Token,
+};
 
 #[derive(Clone, Copy)]
 enum FunctionType {
@@ -46,9 +49,9 @@ impl Resolver {
         self.scopes.pop();
     }
 
-    fn declare(&mut self, name: String) -> Result<(), ResolveError> {
+    fn declare(&mut self, name: &Token) -> Result<(), ResolveError> {
         if let Some(map) = self.scopes.last_mut()
-            && let Some(_) = map.insert(name, false)
+            && let Some(_) = map.insert(name.clone().lexeme, false)
         {
             return Err(ResolveError {
                 message: "Already a variable with this name in this scope.".to_string(),
@@ -57,9 +60,9 @@ impl Resolver {
         Ok(())
     }
 
-    fn define(&mut self, name: String) {
+    fn define(&mut self, name: &Token) {
         if let Some(map) = self.scopes.last_mut() {
-            map.insert(name, true);
+            map.insert(name.lexeme.clone(), true);
         }
     }
 
@@ -89,8 +92,8 @@ impl Resolver {
         self.begin_scope();
 
         for param in &func.parameters {
-            self.declare(param.lexeme.clone())?;
-            self.define(param.lexeme.clone());
+            self.declare(param)?;
+            self.define(param);
         }
         self.resolve_statements(&func.body)?;
 
@@ -108,11 +111,11 @@ impl Resolver {
                 identifier,
                 expression,
             } => {
-                self.declare(identifier.clone())?;
+                self.declare(identifier)?;
                 if let Some(init) = expression {
                     self.resolve_expression(init)?;
                 }
-                self.define(identifier.clone());
+                self.define(identifier);
                 Ok(())
             }
             Stmt::Block(stmts) => {
@@ -138,8 +141,8 @@ impl Resolver {
                 self.resolve_statement(body)
             }
             Stmt::Function(func) => {
-                self.declare(func.name.lexeme.clone())?;
-                self.define(func.name.lexeme.clone());
+                self.declare(&func.name)?;
+                self.define(&func.name);
                 self.resolve_function(func, FunctionType::Function)?;
                 Ok(())
             }
@@ -161,8 +164,8 @@ impl Resolver {
                 let enclosing_class = self.current_class;
                 self.current_class = ClassType::Class;
 
-                self.declare(name.lexeme.clone())?;
-                self.define(name.lexeme.clone());
+                self.declare(name)?;
+                self.define(name);
 
                 if let Some(sup) = superclass {
                     self.current_class = ClassType::Subclass;

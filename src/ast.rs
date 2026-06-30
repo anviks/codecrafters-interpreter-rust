@@ -72,7 +72,7 @@ pub(crate) enum Stmt {
     Expression(Expr),
     Print(Expr),
     Var {
-        identifier: String,
+        identifier: Token,
         expression: Option<Expr>,
     },
     Block(Vec<Stmt>),

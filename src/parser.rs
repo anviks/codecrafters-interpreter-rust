@@ -483,7 +483,7 @@ impl Parser {
         )?;
 
         Ok(Stmt::Var {
-            identifier: name_tok.lexeme,
+            identifier: name_tok,
             expression: init,
         })
     }
