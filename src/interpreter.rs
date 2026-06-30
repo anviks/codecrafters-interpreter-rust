@@ -38,9 +38,7 @@ impl Interpreter {
         expr: &Expr,
     ) -> Result<LoxValue, RuntimeError> {
         match self.locals.get(expr) {
-            Some(distance) => {
-                Environment::get_at(self.environment.clone(), *distance, &name.lexeme)
-            }
+            Some(distance) => self.environment.get_at(*distance, &name.lexeme),
             None => Ok(self.globals.borrow().get(name.clone())?.clone()),
         }
     }
@@ -97,12 +95,10 @@ impl Interpreter {
                 let value = self.evaluate(right)?;
 
                 match self.locals.get(expr) {
-                    Some(distance) => Environment::assign_at(
-                        self.environment.clone(),
-                        *distance,
-                        &left.lexeme,
-                        value.clone(),
-                    ),
+                    Some(distance) => {
+                        self.environment
+                            .assign_at(*distance, &left.lexeme, value.clone())
+                    }
                     None => self
                         .globals
                         .borrow_mut()
@@ -169,14 +165,14 @@ impl Interpreter {
                 let distance = self.locals.get(expr);
 
                 let LoxValue::Class(superclass) =
-                    Environment::get_at(self.environment.clone(), *distance.unwrap(), "super")?
+                    self.environment.get_at(*distance.unwrap(), "super")?
                 else {
                     panic!("Expected 'super' to be a class")
                 };
 
                 let LoxValue::Instance(object) =
                     // Little hacky
-                    Environment::get_at(self.environment.clone(), *distance.unwrap() - 1, "this")?
+                    self.environment.get_at(*distance.unwrap() - 1, "this")?
                 else {
                     panic!("Expected 'this' to be an instance")
                 };

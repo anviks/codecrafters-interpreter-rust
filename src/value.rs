@@ -57,7 +57,7 @@ impl LoxFunction {
 
         match interpreter.execute_block(&self.body, environment) {
             Err(ExecutionError::RuntimeError(err)) => return Err(err),
-            _ if self.is_initializer => Environment::get_at(self.closure.clone(), 0, "this"),
+            _ if self.is_initializer => self.closure.get_at(0, "this"),
             Ok(_) => Ok(LoxValue::Nil),
             Err(ExecutionError::Return(ret)) => Ok(ret),
         }
