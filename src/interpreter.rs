@@ -161,7 +161,7 @@ impl Interpreter {
                 }
             }
             Expr::This(token) => self.look_up_variable(token, expr),
-            Expr::Super { keyword, method } => {
+            Expr::Super { keyword: _, method } => {
                 let distance = self.locals.get(expr);
 
                 let LoxValue::Class(superclass) =

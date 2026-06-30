@@ -273,7 +273,7 @@ impl Resolver {
                     message: "Can't use 'this' outside of a class.".to_string(),
                 }),
             },
-            Expr::Super { keyword, method } => match self.current_class {
+            Expr::Super { keyword, method: _ } => match self.current_class {
                 ClassType::None => Err(ResolveError {
                     message: "Can't use 'super' outside of a class.".to_string(),
                 }),
