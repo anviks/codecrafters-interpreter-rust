@@ -14,6 +14,7 @@ enum FunctionType {
 enum ClassType {
     None,
     Class,
+    Subclass,
 }
 
 pub(crate) struct Resolver {
@@ -164,6 +165,8 @@ impl Resolver {
                 self.define(name.lexeme.clone());
 
                 if let Some(sup) = superclass {
+                    self.current_class = ClassType::Subclass;
+
                     if name.lexeme == sup.lexeme {
                         return Err(ResolveError {
                             message: "A class can't inherit from itself.".to_string(),
@@ -263,15 +266,25 @@ impl Resolver {
                 self.resolve_expression(object)
             }
             Expr::This(token) => match self.current_class {
-                ClassType::Class => Ok(self.resolve_local(expr, &token.lexeme)),
+                ClassType::Class | ClassType::Subclass => {
+                    Ok(self.resolve_local(expr, &token.lexeme))
+                }
                 ClassType::None => Err(ResolveError {
                     message: "Can't use 'this' outside of a class.".to_string(),
                 }),
             },
-            Expr::Super { keyword, method } => {
-                self.resolve_local(expr, &keyword.lexeme);
-                Ok(())
-            }
+            Expr::Super { keyword, method } => match self.current_class {
+                ClassType::None => Err(ResolveError {
+                    message: "Can't use 'super' outside of a class.".to_string(),
+                }),
+                ClassType::Class => Err(ResolveError {
+                    message: "Can't use 'super' in a class with no superclass.".to_string(),
+                }),
+                ClassType::Subclass => {
+                    self.resolve_local(expr, &keyword.lexeme);
+                    Ok(())
+                }
+            },
         }
     }
 }
