@@ -221,12 +221,12 @@ impl Interpreter {
                     Ok(self
                         .environment
                         .borrow_mut()
-                        .define(identifier.to_string(), value))
+                        .define(identifier.lexeme.clone(), value))
                 }
                 None => Ok(self
                     .environment
                     .borrow_mut()
-                    .define(identifier.to_string(), LoxValue::Nil)),
+                    .define(identifier.lexeme.clone(), LoxValue::Nil)),
             },
             Stmt::Block(stmts) => self.execute_block(stmts, self.environment.child()),
             Stmt::If {
